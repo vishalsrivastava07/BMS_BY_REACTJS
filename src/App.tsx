@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BookList } from './components/BookList';
 import { AddBook } from './components/AddBook';
 import {Book} from './components/types'
+import './styles.css'
 
 const App: React.FC = () => {
   // State management

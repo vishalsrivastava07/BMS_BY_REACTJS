@@ -7,8 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "start": "parcel index.html"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -17,11 +16,10 @@
     "@mui/material": "^6.4.1",
     "@shadcn/ui": "^0.0.4",
     "@types/uuid": "^10.0.0",
-    "bulma": "^1.0.3",
-    "parcel": "^2.13.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "shadcn-ui": "^0.9.4",
+    "tailwind": "^4.0.0",
     "uuid": "^11.0.5"
   },
   "devDependencies": {
