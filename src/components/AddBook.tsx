@@ -1,332 +1,216 @@
-// import React, { useState } from 'react';
-// import { 
-//   Typography, 
-//   TextField, 
-//   Button, 
-//   Box, 
-//   Grid, 
-//   Paper, 
-//   Select, 
-//   MenuItem, 
-//   InputLabel, 
-//   FormControl,
-//   SelectChangeEvent
-// } from '@mui/material';
-// import { Book, BookFormProps } from '../index';
+import React, { useState, useEffect } from 'react';
+import { Book } from './types';
+import { v4 as uuidv4 } from 'uuid';
 
-// export function AddBook({ onAddBook, editingBook }: BookFormProps): JSX.Element {
-//   const [formData, setFormData] = useState<Book>(editingBook ? { ...editingBook } : {
-//     id: 0,
-//     title: '',
-//     author: '',
-//     isbn: '',
-//     publicationDate: '',
-//     genre: '',
-//     price: '',
-//     purchaseLink: '',
-//     bookType: ''
-//   });
+interface AddBookProps {
+  onAddBook: (book: Book) => void;
+  editingBook: Book | null;
+}
 
-//   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent): void => {
-//     const { name, value } = e.target;
-//     setFormData(prev => ({
-//       ...prev,
-//       [name]: value
-//     }));
-//   };
-
-//   const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
-//     e.preventDefault();
-//     onAddBook(formData);
-//   };
-
-//   return (
-//     <Paper elevation={3} sx={{      
-//       p: 4, 
-//       backgroundColor: 'rgba(255,255,255,0.1)', 
-//       color: 'white',
-//       '& .MuiInputBase-root': {
-//         backgroundColor: 'rgba(255,255,255,0.2)',
-//         color: 'white'
-//       },
-//       '& .MuiInputLabel-root': {
-//         color: 'rgba(255,255,255,0.7)'
-//       },
-//       '& .MuiOutlinedInput-notchedOutline': {
-//         borderColor: 'rgba(255,255,255,0.3)'
-//       }}}>
-//       <Typography variant="h4" gutterBottom>
-//         {editingBook ? 'Edit Book' : 'Add New Book'}
-//       </Typography>
-//       <Box component="form" onSubmit={handleSubmit}>
-//         <Grid container spacing={3}>
-//           {/* Form fields... */}
-//           <Grid item xs={12} md={6}>
-//             <TextField
-//               fullWidth
-//               label="Book Title"
-//               name="title"
-//               value={formData.title}
-//               onChange={handleChange}
-//               required
-//               variant="outlined"
-//             />
-//           </Grid>
-          
-//           <Grid item xs={12} md={6}>
-//             <TextField
-//               fullWidth
-//               label="Author"
-//               name="author"
-//               value={formData.author}
-//               onChange={handleChange}
-//               required
-//               variant="outlined"
-//             />
-//           </Grid>
-          
-//           <Grid item xs={12} md={6}>
-//             <TextField
-//               fullWidth
-//               label="ISBN"
-//               name="isbn"
-//               value={formData.isbn}
-//               onChange={handleChange}
-//               required
-//               variant="outlined"
-//             />
-//           </Grid>
-          
-//           <Grid item xs={12} md={6}>
-//             <TextField
-//               fullWidth
-//               label="Publication Date"
-//               name="publicationDate"
-//               type="date"
-//               value={formData.publicationDate}
-//               onChange={handleChange}
-//               required
-//               variant="outlined"
-//               InputLabelProps={{ shrink: true }}
-//             />
-//           </Grid>
-          
-//           <Grid item xs={12} md={6}>
-//             <FormControl fullWidth variant="outlined" required>
-//               <InputLabel>Genre</InputLabel>
-//               <Select
-//                 name="genre"
-//                 value={formData.genre}
-//                 onChange={handleChange}
-//                 label="Genre"
-//               >
-//                 <MenuItem value="fiction">Fiction</MenuItem>
-//                 <MenuItem value="non-fiction">Non-Fiction</MenuItem>
-//               </Select>
-//             </FormControl>
-//           </Grid>
-          
-//           <Grid item xs={12} md={6}>
-//             <TextField
-//               fullWidth
-//               label="Price"
-//               name="price"
-//               type="number"
-//               value={formData.price}
-//               onChange={handleChange}
-//               required
-//               variant="outlined"
-//               InputProps={{ inputProps: { step: 0.01 } }}
-//             />
-//           </Grid>
-          
-//           <Grid item xs={12} md={6}>
-//             <TextField
-//               fullWidth
-//               label="Purchase Link"
-//               name="purchaseLink"
-//               type="url"
-//               value={formData.purchaseLink}
-//               onChange={handleChange}
-//               required
-//               variant="outlined"
-//             />
-//           </Grid>
-          
-//           <Grid item xs={12} md={6}>
-//             <FormControl fullWidth variant="outlined" required>
-//               <InputLabel>Book Type</InputLabel>
-//               <Select
-//                 name="bookType"
-//                 value={formData.bookType}
-//                 onChange={handleChange}
-//                 label="Book Type"
-//               >
-//                 <MenuItem value="Ebook">E-Book</MenuItem>
-//                 <MenuItem value="Printed">Printed Book</MenuItem>
-//               </Select>
-//             </FormControl>
-//           </Grid>
-          
-//           <Grid item xs={12}>
-//             <Button 
-//               type="submit" 
-//               variant="contained" 
-//               color="primary" 
-//               fullWidth
-//               size="large"
-//             >
-//               {editingBook ? 'Update Book' : 'Save Book'}
-//             </Button>
-//           </Grid>
-//         </Grid>
-//       </Box>
-//     </Paper>
-//   );
-// }
-
-import React, { useState } from 'react';
-import { SelectChangeEvent } from '@mui/material';
-import { 
-  StyledPaper,
-  FormInput,
-  FormSelect,
-  SubmitButton,
-  Typography,
-  Grid,
-  Box
-} from './ui/AddBookUI';
-import { Book, BookFormProps } from '../index';
-
-export function AddBook({ onAddBook, editingBook }: BookFormProps): JSX.Element {
-  const [formData, setFormData] = useState<Book>(editingBook ? { ...editingBook } : {
-    id: 0,
+export const AddBook: React.FC<AddBookProps> = ({ onAddBook, editingBook }) => {
+  const initialBookState = {
+    id: '',
     title: '',
     author: '',
     isbn: '',
     publicationDate: '',
-    genre: '',
-    price: '',
+    genre: 'fiction' as const,
+    price: 0,
     purchaseLink: '',
-    bookType: ''
-  });
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent): void => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    bookType: 'Ebook' as const
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
+  const [book, setBook] = useState<Book>(initialBookState);
+  const [errors, setErrors] = useState<Partial<Record<keyof Book, string>>>({});
+// const [errors, setErrors] = useState<Map<keyof Book, string>>(new Map());
+
+
+  // Set form values when editingBook changes
+  useEffect(() => {
+    if (editingBook) {
+      setBook(editingBook);
+    } else {
+      setBook(initialBookState);
+    }
+  }, [editingBook]);
+
+  const validateForm = (): boolean => {
+    const newErrors: Partial<Record<keyof Book, string>> = {};
+
+    if (!book.title.trim()) newErrors.title = 'Title is required';
+    if (!book.author.trim()) newErrors.author = 'Author is required';
+    if (!book.isbn.trim()) newErrors.isbn = 'ISBN is required';
+    if (!book.publicationDate) newErrors.publicationDate = 'Publication date is required';
+    if (book.price <= 0) newErrors.price = 'Price must be greater than 0';
+    if (!book.purchaseLink.trim()) newErrors.purchaseLink = 'Purchase link is required';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onAddBook(formData);
+    
+    if (validateForm()) {
+      const submittingBook: Book = {
+        ...book,
+        id: editingBook ? editingBook.id : uuidv4()
+      };
+      onAddBook(submittingBook);
+      setBook(initialBookState);
+      setErrors({});
+    }
   };
-
-  const genreOptions = [
-    { value: 'fiction', label: 'Fiction' },
-    { value: 'non-fiction', label: 'Non-Fiction' }
-  ];
-
-  const bookTypeOptions = [
-    { value: 'Ebook', label: 'E-Book' },
-    { value: 'Printed', label: 'Printed Book' }
-  ];
 
   return (
-    <StyledPaper>
-      <Typography variant="h4" gutterBottom>
-        {editingBook ? 'Edit Book' : 'Add New Book'}
-      </Typography>
-      <Box component="form" onSubmit={handleSubmit}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <FormInput
-              label="Book Title"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <FormInput
-              label="Author"
-              name="author"
-              value={formData.author}
-              onChange={handleChange}
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <FormInput
-              label="ISBN"
-              name="isbn"
-              value={formData.isbn}
-              onChange={handleChange}
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <FormInput
-              label="Publication Date"
-              name="publicationDate"
-              type="date"
-              value={formData.publicationDate}
-              onChange={handleChange}
-              InputLabelProps={{ shrink: true }}
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <FormSelect
-              name="genre"
-              label="Genre"
-              value={formData.genre}
-              onChange={handleChange}
-              options={genreOptions}
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <FormInput
-              label="Price"
-              name="price"
-              type="number"
-              value={formData.price}
-              onChange={handleChange}
-              InputProps={{ inputProps: { step: 0.01 } }}
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <FormInput
-              label="Purchase Link"
-              name="purchaseLink"
-              type="url"
-              value={formData.purchaseLink}
-              onChange={handleChange}
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <FormSelect
-              name="bookType"
-              label="Book Type"
-              value={formData.bookType}
-              onChange={handleChange}
-              options={bookTypeOptions}
-            />
-          </Grid>
-          
-          <Grid item xs={12}>
-            <SubmitButton>
-              {editingBook ? 'Update Book' : 'Save Book'}
-            </SubmitButton>
-          </Grid>
-        </Grid>
-      </Box>
-    </StyledPaper>
+    <div className="container" style={{ maxWidth: '800px', margin: '0 auto' }}>
+      <div className="box" style={{ backgroundColor: '#f0f8ff' }}>
+        <h1 className="title is-3 has-text-centered mb-5">
+          {editingBook ? 'Edit Book' : 'Add New Book'}
+        </h1>
+
+        <form onSubmit={handleSubmit}>
+          <div className="field">
+            <label className="label">Title</label>
+            <div className="control">
+              <input
+                className={`input ${errors.title ? 'is-danger' : ''}`}
+                type="text"
+                value={book.title}
+                onChange={(e) => setBook({ ...book, title: e.target.value })}
+                placeholder="Enter book title"
+              />
+            </div>
+            {errors.title && <p className="help is-danger">{errors.title}</p>}
+          </div>
+
+          <div className="field">
+            <label className="label">Author</label>
+            <div className="control">
+              <input
+                className={`input ${errors.author ? 'is-danger' : ''}`}
+                type="text"
+                value={book.author}
+                onChange={(e) => setBook({ ...book, author: e.target.value })}
+                placeholder="Enter author name"
+              />
+            </div>
+            {errors.author && <p className="help is-danger">{errors.author}</p>}
+          </div>
+
+          <div className="field">
+            <label className="label">ISBN</label>
+            <div className="control">
+              <input
+                className={`input ${errors.isbn ? 'is-danger' : ''}`}
+                type="text"
+                value={book.isbn}
+                onChange={(e) => setBook({ ...book, isbn: e.target.value })}
+                placeholder="Enter ISBN"
+              />
+            </div>
+            {errors.isbn && <p className="help is-danger">{errors.isbn}</p>}
+          </div>
+
+          <div className="field">
+            <label className="label">Publication Date</label>
+            <div className="control">
+              <input
+                className={`input ${errors.publicationDate ? 'is-danger' : ''}`}
+                type="date"
+                value={book.publicationDate}
+                onChange={(e) => setBook({ ...book, publicationDate: e.target.value })}
+              />
+            </div>
+            {errors.publicationDate && <p className="help is-danger">{errors.publicationDate}</p>}
+          </div>
+
+          <div className="columns">
+            <div className="column">
+              <div className="field">
+                <label className="label">Genre</label>
+                <div className="control">
+                  <div className="select is-fullwidth">
+                    <select
+                      value={book.genre}
+                      onChange={(e) => setBook({ ...book, genre: e.target.value as 'fiction' | 'non-fiction' })}
+                    >
+                      <option value="fiction">Fiction</option>
+                      <option value="non-fiction">Non-Fiction</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="column">
+              <div className="field">
+                <label className="label">Book Type</label>
+                <div className="control">
+                  <div className="select is-fullwidth">
+                    <select
+                      value={book.bookType}
+                      onChange={(e) => setBook({ ...book, bookType: e.target.value as 'Ebook' | 'printedBook' })}
+                    >
+                      <option value="Ebook">E-Book</option>
+                      <option value="printedBook">Printed Book</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="field">
+            <label className="label">Price</label>
+            <div className="control">
+              <input
+                className={`input ${errors.price ? 'is-danger' : ''}`}
+                type="number"
+                step="0.01"
+                value={book.price}
+                onChange={(e) => setBook({ ...book, price: parseFloat(e.target.value) })}
+                placeholder="Enter price"
+              />
+            </div>
+            {errors.price && <p className="help is-danger">{errors.price}</p>}
+          </div>
+
+          <div className="field">
+            <label className="label">Purchase Link</label>
+            <div className="control">
+              <input
+                className={`input ${errors.purchaseLink ? 'is-danger' : ''}`}
+                type="url"
+                value={book.purchaseLink}
+                onChange={(e) => setBook({ ...book, purchaseLink: e.target.value })}
+                placeholder="Enter purchase link"
+              />
+            </div>
+            {errors.purchaseLink && <p className="help is-danger">{errors.purchaseLink}</p>}
+          </div>
+
+          <div className="field is-grouped is-grouped-centered mt-5">
+            <div className="control">
+              <button type="submit" className="button is-primary is-medium">
+                {editingBook ? 'Update Book' : 'Add Book'}
+              </button>
+            </div>
+            <div className="control">
+              <button
+                type="button"
+                className="button is-light is-medium"
+                onClick={() => {
+                  setBook(initialBookState);
+                  setErrors({});
+                }}
+              >
+                Clear Form
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
   );
-}
+};

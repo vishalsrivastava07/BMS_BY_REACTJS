@@ -1,110 +1,75 @@
 import React, { useState } from 'react';
-import { 
-  Container, 
-  Typography, 
-  Button, 
-  Box, 
-  AppBar, 
-  Toolbar, 
-  Snackbar,
-  Alert
-} from '@mui/material';
+import { BookList } from './components/BookList';
 import { AddBook } from './components/AddBook';
-import {BookList} from './components/BookList'
-import { Book } from './index';
+import {Book} from './components/types'
 
-function App(): JSX.Element {
+const App: React.FC = () => {
+  // State management
   const [books, setBooks] = useState<Book[]>([]);
-  const [showBookList, setShowBookList] = useState<boolean>(false);
-  const [openToast, setOpenToast] = useState<boolean>(false);
-  const [toastMessage, setToastMessage] = useState<string>('');
+  const [showAddBook, setShowAddBook] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
 
-  const handleAddBook = (newBook: Book): void => {
-    let updatedBooks: Book[];
+  // Handler for adding or updating a book
+  const handleAddBook = (newBook: Book) => {
     if (editingBook) {
-      updatedBooks = books.map(book => 
+      // Update existing book
+      setBooks(books.map(book => 
         book.id === editingBook.id ? newBook : book
-      );
-      setToastMessage('Book updated successfully!');
+      ));
+      setEditingBook(null);
     } else {
-      updatedBooks = [...books, { ...newBook, id: Date.now() }];
-      setToastMessage('Book added successfully!');
+      // Add new book
+      setBooks([...books, newBook]);
     }
-    
-    setBooks(updatedBooks);
-    setOpenToast(true);
-    setEditingBook(null);
-    setShowBookList(true);
+    setShowAddBook(false);
   };
 
-  const handleDeleteBook = (bookId: number): void => {
-    const updatedBooks = books.filter(book => book.id !== bookId);
-    setBooks(updatedBooks);
-    setToastMessage('Book deleted successfully!');
-    setOpenToast(true);
-  };
-
-  const handleEditBook = (book: Book): void => {
+  // Handler for editing a book
+  const handleEditBook = (book: Book) => {
     setEditingBook(book);
-    setShowBookList(false);
+    setShowAddBook(true);
   };
 
-  const handleCloseToast = (_event: React.SyntheticEvent | Event, reason?: string): void => {
-    if (reason === 'clickaway') return;
-    setOpenToast(false);
+  // Handler for deleting a book
+  const handleDeleteBook = (id: string) => {
+    setBooks(books.filter(book => book.id !== id));
+  };
+
+  // Handler for showing the add book form
+  const handleShowAddBook = () => {
+    setShowAddBook(true);
+    setEditingBook(null);
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', backgroundColor: 'black', color: 'white' }}>
-      <AppBar position="static" color="transparent" sx={{ backgroundColor: 'rgba(10, 8, 8, 0.7)'}}>
-        <Toolbar sx={{ justifyContent: 'space-between' }}>
-          <Typography variant="h6" color="inherit">Book Management System</Typography>
-          <Button 
-            variant="contained" 
-            color="secondary"
-            onClick={() => {
-              setShowBookList(!showBookList);
-              setEditingBook(null);
-            }}
-          >
-            {showBookList ? 'Add Book' : 'Book List'}
-          </Button>
-        </Toolbar>
-      </AppBar>
-      
-      <Container maxWidth="lg" sx={{ mt: 4 }}>
-        {!showBookList ? (
-          <AddBook 
-            onAddBook={handleAddBook} 
+    <div className="container is-fluid">
+      {showAddBook ? (
+        <>
+          <div className="buttons m-4">
+            <button
+              className="button is-info"
+              onClick={() => setShowAddBook(false)}
+            >
+              <span className="icon">←</span>
+              <span>Back to Book List</span>
+            </button>
+          </div>
+          <AddBook
+            onAddBook={handleAddBook}
             editingBook={editingBook}
           />
-        ) : (
-          <BookList 
-            books={books} 
-            onDeleteBook={handleDeleteBook}
-            onEditBook={handleEditBook}
-          />
-        )}
-      </Container>
-
-      <Snackbar
-        open={openToast}
-        autoHideDuration={3000}
-        onClose={handleCloseToast}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-      >
-        <Alert 
-          onClose={handleCloseToast} 
-          severity="success" 
-          sx={{ width: '100%' }}
-          variant="filled"
-        >
-          {toastMessage}
-        </Alert>
-      </Snackbar>
-    </Box>
+        </>
+      ) : (
+        <BookList
+          books={books}
+          onDelete={handleDeleteBook}
+          onEdit={handleEditBook}
+          editingBook={editingBook}
+          onShowAddBook={handleShowAddBook}
+        />
+      )}
+    </div>
   );
-}
+};
 
 export default App;
