@@ -1,332 +1,269 @@
-// import React, { useState } from 'react';
-// import { 
-//   Typography, 
-//   TextField, 
-//   Button, 
-//   Box, 
-//   Grid, 
-//   Paper, 
-//   Select, 
-//   MenuItem, 
-//   InputLabel, 
-//   FormControl,
-//   SelectChangeEvent
-// } from '@mui/material';
-// import { Book, BookFormProps } from '../index';
+import React, { useState, useEffect } from 'react';
+import { Book } from './types';
+import { v4 as uuidv4 } from 'uuid';
 
-// export function AddBook({ onAddBook, editingBook }: BookFormProps): JSX.Element {
-//   const [formData, setFormData] = useState<Book>(editingBook ? { ...editingBook } : {
-//     id: 0,
-//     title: '',
-//     author: '',
-//     isbn: '',
-//     publicationDate: '',
-//     genre: '',
-//     price: '',
-//     purchaseLink: '',
-//     bookType: ''
-//   });
+interface AddBookProps {
+  onAddBook: (book: Book) => void;
+  editingBook: Book | null;
+}
 
-//   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent): void => {
-//     const { name, value } = e.target;
-//     setFormData(prev => ({
-//       ...prev,
-//       [name]: value
-//     }));
-//   };
-
-//   const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
-//     e.preventDefault();
-//     onAddBook(formData);
-//   };
-
-//   return (
-//     <Paper elevation={3} sx={{      
-//       p: 4, 
-//       backgroundColor: 'rgba(255,255,255,0.1)', 
-//       color: 'white',
-//       '& .MuiInputBase-root': {
-//         backgroundColor: 'rgba(255,255,255,0.2)',
-//         color: 'white'
-//       },
-//       '& .MuiInputLabel-root': {
-//         color: 'rgba(255,255,255,0.7)'
-//       },
-//       '& .MuiOutlinedInput-notchedOutline': {
-//         borderColor: 'rgba(255,255,255,0.3)'
-//       }}}>
-//       <Typography variant="h4" gutterBottom>
-//         {editingBook ? 'Edit Book' : 'Add New Book'}
-//       </Typography>
-//       <Box component="form" onSubmit={handleSubmit}>
-//         <Grid container spacing={3}>
-//           {/* Form fields... */}
-//           <Grid item xs={12} md={6}>
-//             <TextField
-//               fullWidth
-//               label="Book Title"
-//               name="title"
-//               value={formData.title}
-//               onChange={handleChange}
-//               required
-//               variant="outlined"
-//             />
-//           </Grid>
-          
-//           <Grid item xs={12} md={6}>
-//             <TextField
-//               fullWidth
-//               label="Author"
-//               name="author"
-//               value={formData.author}
-//               onChange={handleChange}
-//               required
-//               variant="outlined"
-//             />
-//           </Grid>
-          
-//           <Grid item xs={12} md={6}>
-//             <TextField
-//               fullWidth
-//               label="ISBN"
-//               name="isbn"
-//               value={formData.isbn}
-//               onChange={handleChange}
-//               required
-//               variant="outlined"
-//             />
-//           </Grid>
-          
-//           <Grid item xs={12} md={6}>
-//             <TextField
-//               fullWidth
-//               label="Publication Date"
-//               name="publicationDate"
-//               type="date"
-//               value={formData.publicationDate}
-//               onChange={handleChange}
-//               required
-//               variant="outlined"
-//               InputLabelProps={{ shrink: true }}
-//             />
-//           </Grid>
-          
-//           <Grid item xs={12} md={6}>
-//             <FormControl fullWidth variant="outlined" required>
-//               <InputLabel>Genre</InputLabel>
-//               <Select
-//                 name="genre"
-//                 value={formData.genre}
-//                 onChange={handleChange}
-//                 label="Genre"
-//               >
-//                 <MenuItem value="fiction">Fiction</MenuItem>
-//                 <MenuItem value="non-fiction">Non-Fiction</MenuItem>
-//               </Select>
-//             </FormControl>
-//           </Grid>
-          
-//           <Grid item xs={12} md={6}>
-//             <TextField
-//               fullWidth
-//               label="Price"
-//               name="price"
-//               type="number"
-//               value={formData.price}
-//               onChange={handleChange}
-//               required
-//               variant="outlined"
-//               InputProps={{ inputProps: { step: 0.01 } }}
-//             />
-//           </Grid>
-          
-//           <Grid item xs={12} md={6}>
-//             <TextField
-//               fullWidth
-//               label="Purchase Link"
-//               name="purchaseLink"
-//               type="url"
-//               value={formData.purchaseLink}
-//               onChange={handleChange}
-//               required
-//               variant="outlined"
-//             />
-//           </Grid>
-          
-//           <Grid item xs={12} md={6}>
-//             <FormControl fullWidth variant="outlined" required>
-//               <InputLabel>Book Type</InputLabel>
-//               <Select
-//                 name="bookType"
-//                 value={formData.bookType}
-//                 onChange={handleChange}
-//                 label="Book Type"
-//               >
-//                 <MenuItem value="Ebook">E-Book</MenuItem>
-//                 <MenuItem value="Printed">Printed Book</MenuItem>
-//               </Select>
-//             </FormControl>
-//           </Grid>
-          
-//           <Grid item xs={12}>
-//             <Button 
-//               type="submit" 
-//               variant="contained" 
-//               color="primary" 
-//               fullWidth
-//               size="large"
-//             >
-//               {editingBook ? 'Update Book' : 'Save Book'}
-//             </Button>
-//           </Grid>
-//         </Grid>
-//       </Box>
-//     </Paper>
-//   );
-// }
-
-import React, { useState } from 'react';
-import { SelectChangeEvent } from '@mui/material';
-import { 
-  StyledPaper,
-  FormInput,
-  FormSelect,
-  SubmitButton,
-  Typography,
-  Grid,
-  Box
-} from './ui/AddBookUI';
-import { Book, BookFormProps } from '../index';
-
-export function AddBook({ onAddBook, editingBook }: BookFormProps): JSX.Element {
-  const [formData, setFormData] = useState<Book>(editingBook ? { ...editingBook } : {
-    id: 0,
+export const AddBook: React.FC<AddBookProps> = ({ onAddBook, editingBook }) => {
+  const initialBookState = {
+    id: '',
     title: '',
     author: '',
     isbn: '',
     publicationDate: '',
-    genre: '',
-    price: '',
+    genre: 'fiction' as const,
+    price: 0,
     purchaseLink: '',
-    bookType: ''
-  });
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent): void => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    bookType: 'Ebook' as const
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
+  const [book, setBook] = useState<Book>(initialBookState);
+  const [errors, setErrors] = useState<Partial<Record<keyof Book, string>>>({});
+
+  useEffect(() => {
+    if (editingBook) {
+      setBook(editingBook);
+    } else {
+      setBook(initialBookState);
+    }
+  }, [editingBook]);
+
+  const validateForm = (): boolean => {
+    const newErrors: Partial<Record<keyof Book, string>> = {};
+
+    // Title validation
+    if (!book.title.trim()) {
+      newErrors.title = 'Title is required';
+    }
+
+    // Author validation
+    if (!book.author.trim()) {
+      newErrors.author = 'Author is required';
+    }
+
+    // ISBN validation
+    if (!book.isbn.trim()) {
+      newErrors.isbn = 'ISBN is required';
+    } else if (!/^\d+$/.test(book.isbn.trim())) {
+      newErrors.isbn = 'ISBN must contain only numbers';
+    }
+
+    // Publication date validation
+    if (!book.publicationDate) {
+      newErrors.publicationDate = 'Publication date is required';
+    }
+
+    // Genre validation
+    if (!book.genre) {
+      newErrors.genre = 'Genre is required';
+    }
+
+    // Book type validation
+    if (!book.bookType) {
+      newErrors.bookType = 'Book type is required';
+    }
+
+    // Price validation
+    if (!book.price || book.price <= 0) {
+      newErrors.price = 'Price must be greater than 0';
+    }
+
+    // Purchase link validation
+    if (!book.purchaseLink.trim()) {
+      newErrors.purchaseLink = 'Purchase link is required';
+    } else {
+      try {
+        new URL(book.purchaseLink);
+      } catch (e) {
+        newErrors.purchaseLink = 'Please enter a valid URL';
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onAddBook(formData);
+    
+    if (validateForm()) {
+      const submittingBook: Book = {
+        ...book,
+        id: editingBook ? editingBook.id : uuidv4()
+      };
+      onAddBook(submittingBook);
+      setBook(initialBookState);
+      setErrors({});
+    }
   };
 
-  const genreOptions = [
-    { value: 'fiction', label: 'Fiction' },
-    { value: 'non-fiction', label: 'Non-Fiction' }
-  ];
-
-  const bookTypeOptions = [
-    { value: 'Ebook', label: 'E-Book' },
-    { value: 'Printed', label: 'Printed Book' }
-  ];
+  const handleIsbnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, ''); // Remove non-numeric characters
+    setBook({ ...book, isbn: value });
+  };
 
   return (
-    <StyledPaper>
-      <Typography variant="h4" gutterBottom>
-        {editingBook ? 'Edit Book' : 'Add New Book'}
-      </Typography>
-      <Box component="form" onSubmit={handleSubmit}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <FormInput
-              label="Book Title"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
+    <div className="max-w-3xl mx-auto px-4">
+      <div className="bg-blue-50 rounded-lg shadow-md p-6">
+        <h1 className="text-2xl font-bold text-center mb-6">
+          {editingBook ? 'Edit Book' : 'Add New Book'}
+        </h1>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Title <span className="text-red-500">*</span>
+            </label>
+            <input
+              className={`w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
+                errors.title ? 'border-red-500' : 'border-gray-300'
+              }`}
+              type="text"
+              value={book.title}
+              onChange={(e) => setBook({ ...book, title: e.target.value })}
+              placeholder="Enter book title"
             />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <FormInput
-              label="Author"
-              name="author"
-              value={formData.author}
-              onChange={handleChange}
+            {errors.title && <p className="mt-1 text-sm text-red-600">{errors.title}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Author <span className="text-red-500">*</span>
+            </label>
+            <input
+              className={`w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
+                errors.author ? 'border-red-500' : 'border-gray-300'
+              }`}
+              type="text"
+              value={book.author}
+              onChange={(e) => setBook({ ...book, author: e.target.value })}
+              placeholder="Enter author name"
             />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <FormInput
-              label="ISBN"
-              name="isbn"
-              value={formData.isbn}
-              onChange={handleChange}
+            {errors.author && <p className="mt-1 text-sm text-red-600">{errors.author}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              ISBN <span className="text-red-500">*</span>
+            </label>
+            <input
+              className={`w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
+                errors.isbn ? 'border-red-500' : 'border-gray-300'
+              }`}
+              type="text"
+              value={book.isbn}
+              onChange={handleIsbnChange}
+              placeholder="Enter ISBN (numbers only)"
             />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <FormInput
-              label="Publication Date"
-              name="publicationDate"
+            {errors.isbn && <p className="mt-1 text-sm text-red-600">{errors.isbn}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Publication Date <span className="text-red-500">*</span>
+            </label>
+            <input
+              className={`w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
+                errors.publicationDate ? 'border-red-500' : 'border-gray-300'
+              }`}
               type="date"
-              value={formData.publicationDate}
-              onChange={handleChange}
-              InputLabelProps={{ shrink: true }}
+              value={book.publicationDate}
+              onChange={(e) => setBook({ ...book, publicationDate: e.target.value })}
             />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <FormSelect
-              name="genre"
-              label="Genre"
-              value={formData.genre}
-              onChange={handleChange}
-              options={genreOptions}
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <FormInput
-              label="Price"
-              name="price"
+            {errors.publicationDate && <p className="mt-1 text-sm text-red-600">{errors.publicationDate}</p>}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Genre <span className="text-red-500">*</span>
+              </label>
+              <select
+                className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                value={book.genre}
+                onChange={(e) => setBook({ ...book, genre: e.target.value as 'fiction' | 'non-fiction' })}
+              >
+                <option value="fiction">Fiction</option>
+                <option value="non-fiction">Non-Fiction</option>
+              </select>
+              {errors.genre && <p className="mt-1 text-sm text-red-600">{errors.genre}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Book Type <span className="text-red-500">*</span>
+              </label>
+              <select
+                className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                value={book.bookType}
+                onChange={(e) => setBook({ ...book, bookType: e.target.value as 'Ebook' | 'printedBook' })}
+              >
+                <option value="Ebook">E-Book</option>
+                <option value="printedBook">Printed Book</option>
+              </select>
+              {errors.bookType && <p className="mt-1 text-sm text-red-600">{errors.bookType}</p>}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Price <span className="text-red-500">*</span>
+            </label>
+            <input
+              className={`w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
+                errors.price ? 'border-red-500' : 'border-gray-300'
+              }`}
               type="number"
-              value={formData.price}
-              onChange={handleChange}
-              InputProps={{ inputProps: { step: 0.01 } }}
+              step="0.01"
+              min="0.01"
+              value={book.price}
+              onChange={(e) => setBook({ ...book, price: parseFloat(e.target.value) })}
+              placeholder="Enter price"
             />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <FormInput
-              label="Purchase Link"
-              name="purchaseLink"
+            {errors.price && <p className="mt-1 text-sm text-red-600">{errors.price}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Purchase Link <span className="text-red-500">*</span>
+            </label>
+            <input
+              className={`w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
+                errors.purchaseLink ? 'border-red-500' : 'border-gray-300'
+              }`}
               type="url"
-              value={formData.purchaseLink}
-              onChange={handleChange}
+              value={book.purchaseLink}
+              onChange={(e) => setBook({ ...book, purchaseLink: e.target.value })}
+              placeholder="Enter purchase link"
             />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <FormSelect
-              name="bookType"
-              label="Book Type"
-              value={formData.bookType}
-              onChange={handleChange}
-              options={bookTypeOptions}
-            />
-          </Grid>
-          
-          <Grid item xs={12}>
-            <SubmitButton>
-              {editingBook ? 'Update Book' : 'Save Book'}
-            </SubmitButton>
-          </Grid>
-        </Grid>
-      </Box>
-    </StyledPaper>
+            {errors.purchaseLink && <p className="mt-1 text-sm text-red-600">{errors.purchaseLink}</p>}
+          </div>
+
+          <div className="flex justify-center space-x-4 pt-4">
+            <button
+              type="submit"
+              className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              {editingBook ? 'Update Book' : 'Add Book'}
+            </button>
+            <button
+              type="button"
+              className="px-6 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              onClick={() => {
+                setBook(initialBookState);
+                setErrors({});
+              }}
+            >
+              Clear Form
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
-}
+};
+
+export default AddBook;
