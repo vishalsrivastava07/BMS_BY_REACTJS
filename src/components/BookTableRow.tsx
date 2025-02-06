@@ -19,23 +19,9 @@ export const BookTableRow: React.FC<BookTableRowProps> = ({
     <td className="p-4">{book.author}</td>
     <td className="p-4">{book.isbn}</td>
     <td className="p-4">
-      <span className={`px-2 py-1 rounded-full text-sm ${
-        book.genre === 'fiction' 
-          ? 'bg-blue-100 text-blue-800' 
-          : 'bg-green-100 text-green-800'
-      }`}>
         {book.genre}
-      </span>
     </td>
-    <td className="p-4">
-      <span className={`px-2 py-1 rounded-full text-sm ${
-        book.bookType === 'Ebook'
-          ? 'bg-green-100 text-green-800'
-          : 'bg-yellow-100 text-yellow-800'
-      }`}>
-        {book.bookType}
-      </span>
-    </td>
+    <td className="p-4">{book.bookType}</td>
     <td className="p-4">${book.price}</td>
     <td className="p-4">
       <div className="flex gap-2">
