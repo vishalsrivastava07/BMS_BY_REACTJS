@@ -1,57 +1,50 @@
 import React, { useState } from 'react';
 import { BookList } from './components/BookList';
 import { AddBook } from './components/AddBook';
-import {Book} from './components/types'
-import './styles.css'
+import { Book } from './components/types';
+import './styles.css';
 
 const App: React.FC = () => {
-  // State management
   const [books, setBooks] = useState<Book[]>([]);
   const [showAddBook, setShowAddBook] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
 
-  // Handler for adding or updating a book
   const handleAddBook = (newBook: Book) => {
     if (editingBook) {
-      // Update existing book
       setBooks(books.map(book => 
         book.id === editingBook.id ? newBook : book
       ));
       setEditingBook(null);
     } else {
-      // Add new book
       setBooks([...books, newBook]);
     }
     setShowAddBook(false);
   };
 
-  // Handler for editing a book
   const handleEditBook = (book: Book) => {
     setEditingBook(book);
     setShowAddBook(true);
   };
 
-  // Handler for deleting a book
   const handleDeleteBook = (id: string) => {
     setBooks(books.filter(book => book.id !== id));
   };
 
-  // Handler for showing the add book form
   const handleShowAddBook = () => {
     setShowAddBook(true);
     setEditingBook(null);
   };
 
   return (
-    <div className="container is-fluid">
+    <div className="container mx-auto px-4">
       {showAddBook ? (
         <>
-          <div className="buttons m-4">
+          <div className="flex space-x-4 m-4">
             <button
-              className="button is-info"
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center"
               onClick={() => setShowAddBook(false)}
             >
-              <span className="icon">←</span>
+              <span className="mr-2">←</span>
               <span>Back to Book List</span>
             </button>
           </div>

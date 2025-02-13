@@ -22,7 +22,7 @@ export const BookTableRow: React.FC<BookTableRowProps> = ({
         {book.genre}
     </td>
     <td className="p-4">{book.bookType}</td>
-    <td className="p-4">${book.price}</td>
+    <td className="p-4">{book.price}</td>
     <td className="p-4">
       <div className="flex gap-2">
         <button

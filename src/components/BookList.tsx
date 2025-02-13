@@ -1,54 +1,56 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Book } from './types';
 import { BookListHeader } from './BookListHeader';
 import { BookSearchBar } from './BookSearchBar';
 import { BookListControls } from './BookListControls';
 import { BookTableRow } from './BookTableRow';
 import { BookDetailsModal } from './BookDetailsModal';
+import { useAppDispatch, useAppSelector } from '../components/redux/hooks';
+import {
+  setBooks,
+  deleteBook,
+  updateBook,
+  setSortField,
+  setSortDirection,
+  setSelectedBook,
+} from '../components/redux/booksSlice';
 
 export interface BookListProps {
   books: Book[];
-  onDelete: (id: string) => void;
-  onEdit: (book: Book) => void;
   onShowAddBook: () => void;
 }
 
 type SortField = 'title' | 'author' | 'isbn' | 'genre' | 'bookType' | 'price';
-type SortDirection = 'asc' | 'desc' | 'none';
 
 export const BookList: React.FC<BookListProps> = ({ 
   books: initialBooks, 
-  onDelete, 
-  onEdit, 
   onShowAddBook 
 }) => {
-  const [books, setBooks] = useState<Book[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
-  const [genreFilter, setGenreFilter] = useState<'all' | 'fiction' | 'non-fiction'>('all');
-  const [sortField, setSortField] = useState<SortField>('title');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('none');
+  const dispatch = useAppDispatch();
+  const {
+    items: books,
+    searchTerm,
+    genreFilter,
+    sortField,
+    sortDirection,
+    selectedBook,
+  } = useAppSelector((state: { books: any; }) => state.books);
 
-  // Load books from localStorage on component mount
   useEffect(() => {
     const storedBooks = localStorage.getItem('books');
     if (storedBooks) {
-      // Use stored books if available
-      setBooks(JSON.parse(storedBooks));
+      dispatch(setBooks(JSON.parse(storedBooks)));
     } else {
-      // Only use initialBooks if no stored books exist
-      setBooks(initialBooks);
+      dispatch(setBooks(initialBooks));
       localStorage.setItem('books', JSON.stringify(initialBooks));
     }
-  }, []); // Remove initialBooks from dependency array
+  }, []);
 
-  // Update books state when initialBooks prop changes
   useEffect(() => {
     if (initialBooks.length > 0) {
       const storedBooks = localStorage.getItem('books');
       const currentBooks = storedBooks ? JSON.parse(storedBooks) : [];
       
-      // Merge new books with existing books, avoiding duplicates
       const mergedBooks = [...currentBooks];
       initialBooks.forEach(newBook => {
         if (!currentBooks.some((book: { id: string; }) => book.id === newBook.id)) {
@@ -56,49 +58,34 @@ export const BookList: React.FC<BookListProps> = ({
         }
       });
       
-      setBooks(mergedBooks);
+      dispatch(setBooks(mergedBooks));
       localStorage.setItem('books', JSON.stringify(mergedBooks));
     }
   }, [initialBooks]);
 
-  // Update localStorage when books change through operations (add/edit/delete)
-  const handleBookChange = (updatedBooks: Book[]) => {
-    setBooks(updatedBooks);
+  const handleDelete = (id: string) => {
+    dispatch(deleteBook(id));
+    const updatedBooks = books.filter((book: { id: string; }) => book.id !== id);
     localStorage.setItem('books', JSON.stringify(updatedBooks));
   };
 
-  // Modified delete handler
-  const handleDelete = (id: string) => {
-    const updatedBooks = books.filter(book => book.id !== id);
-    handleBookChange(updatedBooks);
-    onDelete(id);
-  };
-
-  // Modified edit handler
   const handleEdit = (editedBook: Book) => {
-    const updatedBooks = books.map(book => 
+    dispatch(updateBook(editedBook));
+    const updatedBooks = books.map((book: { id: string; }) => 
       book.id === editedBook.id ? editedBook : book
     );
-    handleBookChange(updatedBooks);
-    onEdit(editedBook);
-  };
-
-  const clearAllFilters = () => {
-    setSearchTerm('');
-    setGenreFilter('all');
-    setSortDirection('none');
+    localStorage.setItem('books', JSON.stringify(updatedBooks));
   };
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      setSortDirection(prev => {
-        if (prev === 'none') return 'asc';
-        if (prev === 'asc') return 'desc';
-        return 'none';
-      });
+      dispatch(setSortDirection(
+        sortDirection === 'none' ? 'asc' :
+        sortDirection === 'asc' ? 'desc' : 'none'
+      ));
     } else {
-      setSortField(field);
-      setSortDirection('asc');
+      dispatch(setSortField(field));
+      dispatch(setSortDirection('asc'));
     }
   };
 
@@ -110,7 +97,7 @@ export const BookList: React.FC<BookListProps> = ({
   };
 
   const filteredBooks = books
-    .filter(book => {
+    .filter((book: { title: string; author: string; isbn: string; genre: any; }) => {
       const matchesSearch = 
         book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         book.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -120,7 +107,7 @@ export const BookList: React.FC<BookListProps> = ({
       
       return matchesSearch && matchesGenre;
     })
-    .sort((a, b) => {
+    .sort((a: { [x: string]: any; }, b: { [x: string]: any; }) => {
       if (sortDirection === 'none') return 0;
       
       const aValue = a[sortField];
@@ -138,19 +125,10 @@ export const BookList: React.FC<BookListProps> = ({
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row items-center mb-4 gap-4">
           <div className="w-full md:w-5/12">
-            <BookSearchBar
-              searchTerm={searchTerm}
-              genreFilter={genreFilter}
-              onSearchChange={setSearchTerm}
-              onGenreChange={setGenreFilter}
-            />
+            <BookSearchBar />
           </div>
           <div className="w-full md:w-7/12">
-            <BookListControls
-              onShowAddBook={onShowAddBook}
-              onClearFilters={clearAllFilters} sortOrder={'asc'} onSortChange={function (_order: 'none' | 'asc' | 'desc'): void {
-                throw new Error('Function not implemented.');
-              } }            />
+            <BookListControls onShowAddBook={onShowAddBook} />
           </div>
         </div>
 
@@ -208,13 +186,13 @@ export const BookList: React.FC<BookListProps> = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredBooks.map(book => (
+                  {filteredBooks.map((book: Book) => (
                     <BookTableRow
                       key={book.id}
                       book={book}
                       onEdit={handleEdit}
                       onDelete={handleDelete}
-                      onShowDetails={setSelectedBook}
+                      onShowDetails={() => dispatch(setSelectedBook(book))}
                     />
                   ))}
                 </tbody>
@@ -227,11 +205,9 @@ export const BookList: React.FC<BookListProps> = ({
       {selectedBook && (
         <BookDetailsModal
           book={selectedBook}
-          onClose={() => setSelectedBook(null)}
+          onClose={() => dispatch(setSelectedBook(null))}
         />
       )}
     </div>
   );
 };
-
-export default BookList;
