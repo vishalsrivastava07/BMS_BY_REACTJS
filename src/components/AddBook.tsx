@@ -17,7 +17,8 @@ export const AddBook: React.FC<AddBookProps> = ({ onAddBook, editingBook }) => {
     genre: 'fiction' as const,
     price: 0,
     purchaseLink: '',
-    bookType: 'Ebook' as const
+    bookType: 'Ebook' as const,
+    description: ''
   };
 
   const [book, setBook] = useState<Book>(initialBookState);
@@ -199,7 +200,7 @@ export const AddBook: React.FC<AddBookProps> = ({ onAddBook, editingBook }) => {
               <select
                 className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
                 value={book.bookType}
-                onChange={(e) => setBook({ ...book, bookType: e.target.value as 'Ebook' | 'printedBook' })}
+                onChange={(e) => setBook({ ...book, bookType: e.target.value as 'Ebook' | 'Printedbook' })}
               >
                 <option value="Ebook">E-Book</option>
                 <option value="printedBook">Printed Book</option>

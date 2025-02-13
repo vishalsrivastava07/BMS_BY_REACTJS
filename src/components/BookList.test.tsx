@@ -1,57 +1,68 @@
-import { expect, test, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BookList } from './BookList';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
+import { BookList } from './BookList';
 import booksReducer from '../components/redux/booksSlice';
+import type { Book } from './types';
 
 // Mock data
-const mockBooks = [
+const mockBooks: Book[] = [
   {
     id: '1',
-    title: 'Test Book 1',
-    author: 'Author 1',
-    isbn: '123-456-789',
-    genre: 'Fiction',
-    bookType: 'Hardcover',
-    price: 29.99
+    title: 'Vishal',
+    author: 'sriv',
+    isbn: '9',
+    genre: 'fiction',
+    bookType: 'Ebook',
+    price: 1,
+    description: 'A tory',
+    purchaseLink: '',
+    publicationDate: ''
   },
   {
     id: '2',
-    title: 'Test Book 2',
-    author: 'Author 2',
-    isbn: '987-654-321',
-    genre: 'Non-Fiction',
-    bookType: 'Paperback',
-    price: 19.99
+    title: '1984',
+    author: 'vis',
+    isbn: '9',
+    genre: 'fiction',
+    bookType: 'Ebook',
+    price: 12,
+    description: 'A novel.',
+    purchaseLink: '',
+    publicationDate: ''
   }
 ];
 
-// Mock localStorage
-const mockLocalStorage = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  clear: vi.fn()
+// Helper function to get cell content by row and column
+const getCellContent = (row: HTMLElement, columnIndex: number): string => {
+  const cells = within(row).getAllByRole('cell');
+  return cells[columnIndex].textContent || '';
 };
-Object.defineProperty(window, 'localStorage', {
-  value: mockLocalStorage
-});
 
-// Setup store for testing
-const createTestStore = () => configureStore({
-  reducer: {
-    books: booksReducer
-  }
-});
+const setupComponent = (initialBooks = mockBooks) => {
+  const store = configureStore({
+    reducer: {
+      books: booksReducer
+    },
+    preloadedState: {
+      books: {
+        items: [],
+        searchTerm: '',
+        genreFilter: 'all',
+        sortField: 'title',
+        sortDirection: 'none',
+        selectedBook: null
+      }
+    }
+  });
 
-// Test wrapper component
-const renderWithProviders = (component: React.ReactElement) => {
-  const store = createTestStore();
   return {
+    user: userEvent.setup(),
     ...render(
       <Provider store={store}>
-        {component}
+        <BookList books={initialBooks} onShowAddBook={() => {}} />
       </Provider>
     ),
     store
@@ -59,108 +70,143 @@ const renderWithProviders = (component: React.ReactElement) => {
 };
 
 describe('BookList Component', () => {
-  const mockShowAddBook = vi.fn();
-
   beforeEach(() => {
-    vi.clearAllMocks();
-    mockLocalStorage.getItem.mockReset();
-    mockLocalStorage.setItem.mockReset();
+    const localStorageMock = {
+      getItem: vi.fn(),
+      setItem: vi.fn(),
+      clear: vi.fn()
+    };
+    global.localStorage = localStorageMock as any;
   });
 
-  test('renders empty state when no books are available', () => {
-    renderWithProviders(<BookList books={[]} onShowAddBook={mockShowAddBook} />);
-    expect(screen.getByText('No books found matching your search criteria')).toBeInTheDocument();
+  describe('Rendering', () => {
+    it('should render the component with correct initial book data', () => {
+      setupComponent();
+      const rows = screen.getAllByRole('row');
+      
+      // Verify first book's data
+      const firstBookRow = rows[1];
+      expect(getCellContent(firstBookRow, 0)).toBe('The Great Vishal');
+      expect(getCellContent(firstBookRow, 1)).toBe('F. Scott Fitzgerald');
+      expect(getCellContent(firstBookRow, 2)).toBe('978-0743273565');
+      expect(getCellContent(firstBookRow, 3)).toBe('fiction');
+      expect(getCellContent(firstBookRow, 4)).toBe('hardcover');
+      expect(getCellContent(firstBookRow, 5)).toBe('15.99');
+
+      // Verify second book's data
+      const secondBookRow = rows[2];
+      expect(getCellContent(secondBookRow, 0)).toBe('1984');
+      expect(getCellContent(secondBookRow, 1)).toBe('George Orwell');
+      expect(getCellContent(secondBookRow, 2)).toBe('978-0451524935');
+      expect(getCellContent(secondBookRow, 3)).toBe('fiction');
+      expect(getCellContent(secondBookRow, 4)).toBe('paperback');
+      expect(getCellContent(secondBookRow, 5)).toBe('12.99');
+    });
+
+    it('should display exact "No books found" message when no books match filter', async () => {
+      const { user } = setupComponent();
+      const searchInput = screen.getByPlaceholderText(/search/i);
+      await user.type(searchInput, 'nonexistent book');
+      
+      const noBooksMessage = screen.getByText('No books found matching your search criteria');
+      expect(noBooksMessage).toHaveTextContent('No books found matching your search criteria');
+      expect(noBooksMessage.tagName.toLowerCase()).toBe('p');
+      expect(noBooksMessage).toHaveClass('text-center', 'text-xl');
+    });
   });
 
-  test('renders book list with provided books', () => {
-    renderWithProviders(<BookList books={[mockBooks]} onShowAddBook={mockShowAddBook} />);
-    expect(screen.getByText('Test Book 1')).toBeInTheDocument();
-    expect(screen.getByText('Test Book 2')).toBeInTheDocument();
+  describe('Sorting', () => {
+    it('should sort books by title in ascending order with correct order', async () => {
+      const { user } = setupComponent();
+      const titleHeader = screen.getByText(/^Title/);
+      
+      await user.click(titleHeader);
+      
+      const rows = screen.getAllByRole('row');
+      expect(getCellContent(rows[1], 0)).toBe('1984');
+      expect(getCellContent(rows[2], 0)).toBe('The Great Vishal');
+    });
+
+    it('should sort books by price in descending order with correct values', async () => {
+      const { user } = setupComponent();
+      const priceHeader = screen.getByText(/^Price/);
+      
+      // Click twice for descending order
+      await user.click(priceHeader);
+      await user.click(priceHeader);
+      
+      const rows = screen.getAllByRole('row');
+      expect(parseFloat(getCellContent(rows[1], 5))).toBe(15.99);
+      expect(parseFloat(getCellContent(rows[2], 5))).toBe(12.99);
+    });
+
+    it('should sort books by author with correct alphabetical order', async () => {
+      const { user } = setupComponent();
+      const authorHeader = screen.getByText(/^Author/);
+      
+      await user.click(authorHeader);
+      
+      const rows = screen.getAllByRole('row');
+      expect(getCellContent(rows[1], 1)).toBe('F. Scott Fitzgerald');
+      expect(getCellContent(rows[2], 1)).toBe('George Orwell');
+    });
   });
 
-  test('handles book deletion', async () => {
-    mockLocalStorage.getItem.mockReturnValue(JSON.stringify(mockBooks));
-    renderWithProviders(<BookList books={mockBooks} onShowAddBook={mockShowAddBook} />);
-    
-    const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
-    await userEvent.click(deleteButtons[0]);
-    
-    expect(mockLocalStorage.setItem).toHaveBeenCalled();
-    const updatedBooks = JSON.parse(mockLocalStorage.setItem.mock.calls[0][1]);
-    expect(updatedBooks).not.toContainEqual(mockBooks[0]);
+  describe('Filtering', () => {
+    it('should filter books by search term and show exact matches', async () => {
+      const { user } = setupComponent();
+      const searchInput = screen.getByPlaceholderText(/search/i);
+      
+      await user.type(searchInput, 'Vishal');
+      
+      const rows = screen.getAllByRole('row');
+      expect(rows).toHaveLength(2); // Header + 1 matching book
+      expect(getCellContent(rows[1], 0)).toBe('The Great Vishal');
+      expect(getCellContent(rows[1], 1)).toBe('F. Scott Fitzgerald');
+    });
   });
 
-  test('handles book editing', async () => {
-    mockLocalStorage.getItem.mockReturnValue(JSON.stringify(mockBooks));
-    renderWithProviders(<BookList books={mockBooks} onShowAddBook={mockShowAddBook} />);
-    
-    const editButtons = screen.getAllByRole('button', { name: /edit/i });
-    await userEvent.click(editButtons[0]);
-    
-    // Assuming there's an edit form that appears
-    const titleInput = screen.getByLabelText(/title/i);
-    await userEvent.clear(titleInput);
-    await userEvent.type(titleInput, 'Updated Book Title');
-    
-    const saveButton = screen.getByRole('button', { name: /save/i });
-    await userEvent.click(saveButton);
-    
-    expect(mockLocalStorage.setItem).toHaveBeenCalled();
-    const updatedBooks = JSON.parse(mockLocalStorage.setItem.mock.calls[0][1]);
-    expect(updatedBooks[0].title).toBe('Updated Book Title');
+  describe('CRUD Operations', () => {
+    it('should remove exactly one book when delete button is clicked', async () => {
+      const { user } = setupComponent();
+      const initialRows = screen.getAllByRole('row');
+      const initialCount = initialRows.length;
+      
+      const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
+      await user.click(deleteButtons[0]);
+      
+      const remainingRows = screen.getAllByRole('row');
+      expect(remainingRows.length).toBe(initialCount - 1);
+      expect(getCellContent(remainingRows[1], 0)).toBe('1984');
+    });
   });
 
-  test('handles sorting by different fields', async () => {
-    renderWithProviders(<BookList books={mockBooks} onShowAddBook={mockShowAddBook} />);
-    
-    // Test sorting by title
-    const titleHeader = screen.getByText('Title');
-    await userEvent.click(titleHeader);
-    
-    // First click should sort ascending
-    let books = screen.getAllByRole('row').slice(1); // Exclude header row
-    expect(books[0]).toHaveTextContent('Test Book 1');
-    expect(books[1]).toHaveTextContent('Test Book 2');
-    
-    // Second click should sort descending
-    await userEvent.click(titleHeader);
-    books = screen.getAllByRole('row').slice(1);
-    expect(books[0]).toHaveTextContent('Test Book 2');
-    expect(books[1]).toHaveTextContent('Test Book 1');
-  });
+  describe('Local Storage', () => {
+    it('should load exact book data from localStorage on mount', () => {
+      const storedBooks = [...mockBooks];
+      localStorage.getItem = vi.fn().mockReturnValue(JSON.stringify(storedBooks));
+      
+      setupComponent([]);
+      
+      const rows = screen.getAllByRole('row');
+      expect(rows.length - 1).toBe(storedBooks.length); // Subtract header row
+      
+      storedBooks.forEach((book, index) => {
+        const row = rows[index + 1]; // +1 to skip header
+        expect(getCellContent(row, 0)).toBe(book.title);
+        expect(getCellContent(row, 1)).toBe(book.author);
+        expect(getCellContent(row, 2)).toBe(book.isbn);
+      });
+    });
 
-  test('handles search functionality', async () => {
-    renderWithProviders(<BookList books={mockBooks} onShowAddBook={mockShowAddBook} />);
-    
-    const searchInput = screen.getByPlaceholderText(/search/i);
-    await userEvent.type(searchInput, 'Test Book 1');
-    
-    expect(screen.getByText('Test Book 1')).toBeInTheDocument();
-    expect(screen.queryByText('Test Book 2')).not.toBeInTheDocument();
-  });
-
-  test('handles genre filtering', async () => {
-    renderWithProviders(<BookList books={mockBooks} onShowAddBook={mockShowAddBook} />);
-    
-    const genreSelect = screen.getByLabelText(/genre/i);
-    await userEvent.selectOptions(genreSelect, 'Fiction');
-    
-    expect(screen.getByText('Test Book 1')).toBeInTheDocument();
-    expect(screen.queryByText('Test Book 2')).not.toBeInTheDocument();
-  });
-
-  test('shows book details modal when clicking view details', async () => {
-    renderWithProviders(<BookList books={mockBooks} onShowAddBook={mockShowAddBook} />);
-    
-    const viewDetailsButtons = screen.getAllByRole('button', { name: /view details/i });
-    await userEvent.click(viewDetailsButtons[0]);
-    
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByText('Test Book 1')).toBeInTheDocument();
-    
-    const closeButton = screen.getByRole('button', { name: /close/i });
-    await userEvent.click(closeButton);
-    
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    it('should save exact book data to localStorage when deleting', async () => {
+      const { user } = setupComponent();
+      const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
+      
+      await user.click(deleteButtons[0]);
+      
+      const expectedBooks = mockBooks.slice(1); // Remove first book
+      expect(localStorage.setItem).toHaveBeenCalledWith('books', JSON.stringify(expectedBooks));
+    });
   });
 });

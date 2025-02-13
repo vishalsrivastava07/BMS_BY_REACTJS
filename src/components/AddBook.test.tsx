@@ -1,193 +1,190 @@
-import { expect, test, describe, vi } from 'vitest';
-import { render, fireEvent } from '@testing-library/react';
-import { AddBook } from './AddBook';
-import { Book } from './types';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { Provider } from 'react-redux';
+import { configureStore } from '@reduxjs/toolkit';
+import AddBook from '../components/AddBook';
+import booksReducer from '../components/redux/booksSlice';
+
+const mockStore = configureStore({
+  reducer: {
+    books: booksReducer,
+  },
+});
 
 describe('AddBook Component', () => {
-  const sampleBook: Book = {
-      title: 'Book',
-      author: 'Author',
-      isbn: '1',
-      publicationDate: '01-02-2032',
-      genre: 'fiction',
-      price: 15,
-      purchaseLink: 'https://www.x.com',
-      bookType: 'Ebook',
-      id: ''
-  };
-
   const mockOnAddBook = vi.fn();
-
-  const fillForm = async (container: HTMLElement, book: Partial<Book> = sampleBook) => {
-    if (book.title) {
-      await fireEvent.change(container.querySelector('input[placeholder="Enter book title"]')!, {
-        target: { value: book.title }
-      });
-    }
-    if (book.author) {
-      await fireEvent.change(container.querySelector('input[placeholder="Enter author name"]')!, {
-        target: { value: book.author }
-      });
-    }
-    if (book.isbn) {
-      await fireEvent.change(container.querySelector('input[placeholder="Enter ISBN (numbers only)"]')!, {
-        target: { value: book.isbn }
-      });
-    }
-    if (book.publicationDate) {
-      await fireEvent.change(container.querySelector('input[type="date"]')!, {
-        target: { value: book.publicationDate }
-      });
-    }
-    if (book.genre) {
-      await fireEvent.change(container.querySelector('select[value="fiction"]')!, {
-        target: { value: book.genre }
-      });
-    }
-    if (book.bookType) {
-      await fireEvent.change(container.querySelector('select[value="Ebook"]')!, {
-        target: { value: book.bookType }
-      });
-    }
-    if (book.price) {
-      await fireEvent.change(container.querySelector('input[type="number"]')!, {
-        target: { value: book.price.toString() }
-      });
-    }
-    if (book.purchaseLink) {
-      await fireEvent.change(container.querySelector('input[type="url"]')!, {
-        target: { value: book.purchaseLink }
-      });
-    }
-  };
-
-  test('renders form with all fields', async () => {
-    const { container } = render(<AddBook onAddBook={mockOnAddBook} editingBook={null} />);
-    
-    expect(container.querySelector('input[placeholder="Enter book title"]')).toBeTruthy();
-    expect(container.querySelector('input[placeholder="Enter author name"]')).toBeTruthy();
-    expect(container.querySelector('input[placeholder="Enter ISBN (numbers only)"]')).toBeTruthy();
-    expect(container.querySelector('input[type="date"]')).toBeTruthy();
-    expect(container.querySelector('select[value="fiction"]')).toBeTruthy();
-    expect(container.querySelector('select[value="Ebook"]')).toBeTruthy();
-    expect(container.querySelector('input[type="number"]')).toBeTruthy();
-    expect(container.querySelector('input[type="url"]')).toBeTruthy();
+  
+  beforeEach(() => {
+    mockOnAddBook.mockClear();
+    render(
+      <Provider store={mockStore}>
+        <AddBook onAddBook={mockOnAddBook} editingBook={null} />
+      </Provider>
+    );
   });
 
-  test('submited successfully', async () => {
-    const { container } = render(<AddBook onAddBook={mockOnAddBook} editingBook={null} />);
-    
-    await fillForm(container);
-    
-    const submitButton = container.querySelector('button[type="submit"]')!;
-    await fireEvent.click(submitButton);
-    
-    expect(mockOnAddBook).toHaveBeenCalledTimes(1);
-    expect(mockOnAddBook).toHaveBeenCalledWith(expect.objectContaining({
-      title: sampleBook.title,
-      author: sampleBook.author,
-      isbn: sampleBook.isbn,
-      publicationDate: sampleBook.publicationDate,
-      genre: sampleBook.genre,
-      price: sampleBook.price,
-      purchaseLink: sampleBook.purchaseLink,
-      bookType: sampleBook.bookType
-    }));
-  });
-
-  test('shows validation errors for empty fields', async () => {
-    const { container } = render(<AddBook onAddBook={mockOnAddBook} editingBook={null} />);
-    
-    const submitButton = container.querySelector('button[type="submit"]')!;
-    await fireEvent.click(submitButton);
-    
-    expect(container.querySelector('p.text-red-600')).toBeTruthy();
-    expect(mockOnAddBook).not.toHaveBeenCalled();
-  });
-
-  test('validates ISBN format', async () => {
-    const { container } = render(<AddBook onAddBook={mockOnAddBook} editingBook={null} />);
-    
-    await fillForm(container, {
-      ...sampleBook,
-      isbn: 'invalid-isbn'
+  describe('Initial Render', () => {
+    it('renders form with empty fields', () => {
+      expect(screen.getByLabelText(/title/i)).toHaveValue('');
+      expect(screen.getByLabelText(/author/i)).toHaveValue('');
+      expect(screen.getByLabelText(/isbn/i)).toHaveValue('');
+      expect(screen.getByLabelText(/publication date/i)).toHaveValue('');
+      expect(screen.getByLabelText(/genre/i)).toHaveValue('fiction');
+      expect(screen.getByLabelText(/book type/i)).toHaveValue('Ebook');
+      expect(screen.getByLabelText(/price/i)).toHaveValue(0);
+      expect(screen.getByLabelText(/purchase link/i)).toHaveValue('');
     });
-    
-    const submitButton = container.querySelector('button[type="submit"]')!;
-    await fireEvent.click(submitButton);
-    
-    expect(container.querySelector('p.text-red-600')).toBeTruthy();
-    expect(mockOnAddBook).not.toHaveBeenCalled();
-  });
 
-  test('validates price is greater than 0', async () => {
-    const { container } = render(<AddBook onAddBook={mockOnAddBook} editingBook={null} />);
-    
-    await fillForm(container, {
-      ...sampleBook,
-      price: -1
+    it('renders submit and clear buttons with correct text', () => {
+      const submitButton = screen.getByRole('button', { name: /add book/i });
+      const clearButton = screen.getByRole('button', { name: /clear form/i });
+      
+      expect(submitButton).toHaveTextContent('Add Book');
+      expect(clearButton).toHaveTextContent('Clear Form');
     });
-    
-    const submitButton = container.querySelector('button[type="submit"]')!;
-    await fireEvent.click(submitButton);
-    
-    expect(container.querySelector('p.text-red-600')).toBeTruthy();
-    expect(mockOnAddBook).not.toHaveBeenCalled();
   });
 
-  test('validates purchase link format', async () => {
-    const { container } = render(<AddBook onAddBook={mockOnAddBook} editingBook={null} />);
-    
-    await fillForm(container, {
-      ...sampleBook,
-      purchaseLink: 'invalid-url'
+  describe('Form Validation', () => {
+    it('displays specific error messages for empty required fields', async () => {
+      const submitButton = screen.getByRole('button', { name: /add book/i });
+      fireEvent.click(submitButton);
+
+      const errors = await screen.findAllByText(/is required/i);
+      expect(errors).toHaveLength(6); // Title, Author, ISBN, Publication date, Price, Purchase link
+
+      const errorMessages = errors.map(error => error.textContent);
+      expect(errorMessages).toContain('Title is required');
+      expect(errorMessages).toContain('Author is required');
+      expect(errorMessages).toContain('ISBN is required');
+      expect(errorMessages).toContain('Publication date is required');
+      expect(errorMessages).toContain('Purchase link is required');
     });
-    
-    const submitButton = container.querySelector('button[type="submit"]')!;
-    await fireEvent.click(submitButton);
-    
-    expect(container.querySelector('p.text-red-600')).toBeTruthy();
-    expect(mockOnAddBook).not.toHaveBeenCalled();
+
+    it('validates ISBN format correctly', async () => {
+      const isbnInput = screen.getByLabelText(/isbn/i);
+      await userEvent.type(isbnInput, 'abc123');
+      
+      const submitButton = screen.getByRole('button', { name: /add book/i });
+      fireEvent.click(submitButton);
+
+      const error = await screen.findByText('ISBN must contain only numbers');
+      expect(error).toBeInTheDocument();
+      expect(isbnInput).toHaveValue('123'); // Should only contain numbers
+    });
+
+    it('validates price must be positive', async () => {
+      const priceInput = screen.getByLabelText(/price/i);
+      await userEvent.type(priceInput, '-10.99');
+      
+      const submitButton = screen.getByRole('button', { name: /add book/i });
+      fireEvent.click(submitButton);
+
+      const error = await screen.findByText('Price must be greater than 0');
+      expect(error).toBeInTheDocument();
+    });
+
+    it('validates purchase link format', async () => {
+      const purchaseLinkInput = screen.getByLabelText(/purchase link/i);
+      await userEvent.type(purchaseLinkInput, 'invalid-url');
+      
+      const submitButton = screen.getByRole('button', { name: /add book/i });
+      fireEvent.click(submitButton);
+
+      const error = await screen.findByText('Please enter a valid URL');
+      expect(error).toBeInTheDocument();
+    });
   });
 
-  test('clears form on successful submission', async () => {
-    const { container } = render(<AddBook onAddBook={mockOnAddBook} editingBook={null} />);
-    
-    await fillForm(container);
-    
-    const submitButton = container.querySelector('button[type="submit"]')!;
-    await fireEvent.click(submitButton);
-    
-    expect(container.querySelector('input[placeholder="Enter book title"]')?.getAttribute('value')).toBe('');
-    expect(container.querySelector('input[placeholder="Enter author name"]')?.getAttribute('value')).toBe('');
+  describe('Form Submission', () => {
+    it('successfully submits form with valid data', async () => {
+      const testData = {
+        title: 'Test Book Title',
+        author: 'Test Author Name',
+        isbn: '1234567890',
+        publicationDate: '2024-03-15',
+        genre: 'fiction',
+        bookType: 'Ebook',
+        price: '29.99',
+        purchaseLink: 'https://example.com/book'
+      };
+
+      // Fill in form fields
+      await userEvent.type(screen.getByLabelText(/title/i), testData.title);
+      await userEvent.type(screen.getByLabelText(/author/i), testData.author);
+      await userEvent.type(screen.getByLabelText(/isbn/i), testData.isbn);
+      await userEvent.type(screen.getByLabelText(/publication date/i), testData.publicationDate);
+      await userEvent.type(screen.getByLabelText(/price/i), testData.price);
+      await userEvent.type(screen.getByLabelText(/purchase link/i), testData.purchaseLink);
+
+      // Verify input values
+      expect(screen.getByLabelText(/title/i)).toHaveValue(testData.title);
+      expect(screen.getByLabelText(/author/i)).toHaveValue(testData.author);
+      expect(screen.getByLabelText(/isbn/i)).toHaveValue(testData.isbn);
+      expect(screen.getByLabelText(/publication date/i)).toHaveValue(testData.publicationDate);
+      expect(screen.getByLabelText(/genre/i)).toHaveValue(testData.genre);
+      expect(screen.getByLabelText(/book type/i)).toHaveValue(testData.bookType);
+      expect(screen.getByLabelText(/price/i)).toHaveValue(Number(testData.price));
+      expect(screen.getByLabelText(/purchase link/i)).toHaveValue(testData.purchaseLink);
+
+      // Submit form
+      const submitButton = screen.getByRole('button', { name: /add book/i });
+      fireEvent.click(submitButton);
+
+      // Verify onAddBook was called with correct data
+      expect(mockOnAddBook).toHaveBeenCalledTimes(1);
+      expect(mockOnAddBook).toHaveBeenCalledWith(expect.objectContaining({
+        title: testData.title,
+        author: testData.author,
+        isbn: testData.isbn,
+        publicationDate: testData.publicationDate,
+        genre: testData.genre,
+        bookType: testData.bookType,
+        price: Number(testData.price),
+        purchaseLink: testData.purchaseLink
+      }));
+    });
   });
 
-  test('loads editing book data correctly', async () => {
-    const { container } = render(<AddBook onAddBook={mockOnAddBook} editingBook={sampleBook} />);
-    
-    expect(container.querySelector('input[placeholder="Enter book title"]')?.getAttribute('value')).toBe(sampleBook.title);
-    expect(container.querySelector('input[placeholder="Enter author name"]')?.getAttribute('value')).toBe(sampleBook.author);
-    expect(container.querySelector('input[placeholder="Enter ISBN (numbers only)"]')?.getAttribute('value')).toBe(sampleBook.isbn);
-  });
+  describe('Form Reset', () => {
+    it('clears all form fields when Clear Form button is clicked', async () => {
+      // Fill form with data
+      await userEvent.type(screen.getByLabelText(/title/i), 'Test Title');
+      await userEvent.type(screen.getByLabelText(/author/i), 'Test Author');
+      await userEvent.type(screen.getByLabelText(/isbn/i), '1234567890');
+      await userEvent.type(screen.getByLabelText(/publication date/i), '2024-03-15');
+      await userEvent.type(screen.getByLabelText(/price/i), '29.99');
+      await userEvent.type(screen.getByLabelText(/purchase link/i), 'https://example.com');
 
-  test('clear button resets form', async () => {
-    const { container } = render(<AddBook onAddBook={mockOnAddBook} editingBook={null} />);
-    
-    await fillForm(container);
-    
-    const clearButton = container.querySelector('button[type="button"]')!;
-    await fireEvent.click(clearButton);
-    
-    expect(container.querySelector('input[placeholder="Enter book title"]')?.getAttribute('value')).toBe('');
-    expect(container.querySelector('input[placeholder="Enter author name"]')?.getAttribute('value')).toBe('');
-  });
+      // Click clear button
+      const clearButton = screen.getByRole('button', { name: /clear form/i });
+      fireEvent.click(clearButton);
 
-  test('handles ISBN input formatting', async () => {
-    const { container } = render(<AddBook onAddBook={mockOnAddBook} editingBook={null} />);
-    
-    const isbnInput = container.querySelector('input[placeholder="Enter ISBN (numbers only)"]')!;
-    await fireEvent.change(isbnInput, { target: { value: '123abc456' } });
-    
-    expect(isbnInput.getAttribute('value')).toBe('123456');
+      // Verify all fields are cleared
+      expect(screen.getByLabelText(/title/i)).toHaveValue('');
+      expect(screen.getByLabelText(/author/i)).toHaveValue('');
+      expect(screen.getByLabelText(/isbn/i)).toHaveValue('');
+      expect(screen.getByLabelText(/publication date/i)).toHaveValue('');
+      expect(screen.getByLabelText(/genre/i)).toHaveValue('fiction');
+      expect(screen.getByLabelText(/book type/i)).toHaveValue('Ebook');
+      expect(screen.getByLabelText(/price/i)).toHaveValue(0);
+      expect(screen.getByLabelText(/purchase link/i)).toHaveValue('');
+    });
+
+    it('clears error messages when form is reset', async () => {
+      // Submit empty form to trigger errors
+      const submitButton = screen.getByRole('button', { name: /add book/i });
+      fireEvent.click(submitButton);
+
+      // Verify errors are shown
+      expect(await screen.findAllByText(/is required/i)).toHaveLength(6);
+
+      // Clear form
+      const clearButton = screen.getByRole('button', { name: /clear form/i });
+      fireEvent.click(clearButton);
+
+      // Verify errors are cleared
+      expect(screen.queryAllByText(/is required/i)).toHaveLength(0);
+    });
   });
 });

@@ -5,14 +5,15 @@ import { Book } from './types';
 
 const mockBook: Book = {
   id: '1',
-  title: 'Test Book',
-  author: 'John Doe',
-  isbn: '1234567890',
+  title: 'Test',
+  author: 'vish',
+  isbn: '1',
   publicationDate: '2023-01-01',
   genre: 'fiction',
-  price: 19.99,
+  price: 1,
   purchaseLink: 'https://example.com',
   bookType: 'Ebook',
+  description: ''
 };
 
 describe('BookTableRow', () => {
