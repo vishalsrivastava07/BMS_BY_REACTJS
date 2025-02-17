@@ -14,6 +14,17 @@ const mockStore = configureStore({
 
 describe('AddBook Component', () => {
   const mockOnAddBook = vi.fn();
+  const validBook = {
+    title: 'Test Book',
+    author: 'Test Author',
+    isbn: '1234567890',
+    publicationDate: '2024-02-17',
+    genre: 'fiction',
+    price: 29.99,
+    purchaseLink: 'https://example.com/book',
+    bookType: 'Ebook',
+    description: ''
+  };
   
   beforeEach(() => {
     mockOnAddBook.mockClear();
@@ -44,6 +55,116 @@ describe('AddBook Component', () => {
       expect(clearButton).toHaveTextContent('Clear Form');
     });
   });
+
+
+
+describe('AddBook Component', () => {
+  const mockOnAddBook = vi.fn();
+  const validBook = {
+    title: 'Test',
+    author: 'Author',
+    isbn: '1',
+    publicationDate: '2024-02-17',
+    genre: 'fiction',
+    price: 10,
+    purchaseLink: 'https://x.com',
+    bookType: 'Ebook',
+    description: ''
+  };
+
+  beforeEach(() => {
+    mockOnAddBook.mockClear();
+  });
+
+  test('successfully adds a book when all required fields are filled correctly', async () => {
+    const user = userEvent.setup();
+    render(<AddBook onAddBook={mockOnAddBook} editingBook={null} />);
+
+    // Fill in the form fields
+    await user.type(screen.getByPlaceholderText(/Enter book title/i), validBook.title);
+    await user.type(screen.getByPlaceholderText(/Enter author name/i), validBook.author);
+    await user.type(screen.getByPlaceholderText(/Enter ISBN/i), validBook.isbn);
+    
+    // Set publication date
+    await user.type(screen.getByLabelText(/Publication Date/i), validBook.publicationDate);
+    
+    // Select genre and book type
+    await user.selectOptions(screen.getByLabelText(/Genre/i), validBook.genre);
+    await user.selectOptions(screen.getByLabelText(/Book Type/i), validBook.bookType);
+    
+    // Set price and purchase link
+    await user.type(screen.getByPlaceholderText(/Enter price/i), validBook.price.toString());
+    await user.type(screen.getByPlaceholderText(/Enter purchase link/i), validBook.purchaseLink);
+
+    // Submit the form
+    await user.click(screen.getByRole('button', { name: /Add Book/i }));
+
+    // Verify onAddBook was called with the correct data
+    expect(mockOnAddBook).toHaveBeenCalledTimes(1);
+    expect(mockOnAddBook).toHaveBeenCalledWith(expect.objectContaining({
+      ...validBook,
+      id: expect.any(String) // UUID will be generated
+    }));
+
+    // Verify form is reset after successful submission
+    expect(screen.getByPlaceholderText(/Enter book title/i)).toHaveValue('');
+    expect(screen.getByPlaceholderText(/Enter author name/i)).toHaveValue('');
+  });
+
+  test('displays error messages when required fields are missing', async () => {
+    const user = userEvent.setup();
+    render(<AddBook onAddBook={mockOnAddBook} editingBook={null} />);
+
+    // Submit form without filling any fields
+    await user.click(screen.getByRole('button', { name: /Add Book/i }));
+
+    // Verify error messages are displayed
+    expect(screen.getByText(/Title is required/i)).toBeInTheDocument();
+    expect(screen.getByText(/Author is required/i)).toBeInTheDocument();
+    expect(screen.getByText(/ISBN is required/i)).toBeInTheDocument();
+    expect(screen.getByText(/Publication date is required/i)).toBeInTheDocument();
+    expect(screen.getByText(/Price must be greater than 0/i)).toBeInTheDocument();
+    expect(screen.getByText(/Purchase link is required/i)).toBeInTheDocument();
+
+    // Verify onAddBook was not called
+    expect(mockOnAddBook).not.toHaveBeenCalled();
+  });
+
+  test('displays error for invalid ISBN format', async () => {
+    const user = userEvent.setup();
+    render(<AddBook onAddBook={mockOnAddBook} editingBook={null} />);
+
+    // Enter invalid ISBN (with letters)
+    await user.type(screen.getByPlaceholderText(/Enter ISBN/i), 'abc123');
+
+    // Submit the form
+    await user.click(screen.getByRole('button', { name: /Add Book/i }));
+
+    // Verify error message is displayed
+    expect(screen.getByText(/ISBN must contain only numbers/i)).toBeInTheDocument();
+
+    // Verify onAddBook was not called
+    expect(mockOnAddBook).not.toHaveBeenCalled();
+  });
+
+  test('displays error for invalid purchase link', async () => {
+    const user = userEvent.setup();
+    render(<AddBook onAddBook={mockOnAddBook} editingBook={null} />);
+
+    // Enter invalid URL
+    await user.type(screen.getByPlaceholderText(/Enter purchase link/i), 'invalid-url');
+
+    // Submit the form
+    await user.click(screen.getByRole('button', { name: /Add Book/i }));
+
+    // Verify error message is displayed
+    expect(screen.getByText(/Please enter a valid URL/i)).toBeInTheDocument();
+
+    // Verify onAddBook was not called
+    expect(mockOnAddBook).not.toHaveBeenCalled();
+  });
+});
+
 
   describe('Form Validation', () => {
     it('displays specific error messages for empty required fields', async () => {
@@ -98,51 +219,31 @@ describe('AddBook Component', () => {
 
   describe('Form Submission', () => {
     it('successfully submits form with valid data', async () => {
-      const testData = {
-        title: 'Test Book Title',
-        author: 'Test Author Name',
-        isbn: '1234567890',
-        publicationDate: '2024-03-15',
-        genre: 'fiction',
-        bookType: 'Ebook',
-        price: '29.99',
-        purchaseLink: 'https://example.com/book'
-      };
+      const user = userEvent.setup();
 
       // Fill in form fields
-      await userEvent.type(screen.getByLabelText(/title/i), testData.title);
-      await userEvent.type(screen.getByLabelText(/author/i), testData.author);
-      await userEvent.type(screen.getByLabelText(/isbn/i), testData.isbn);
-      await userEvent.type(screen.getByLabelText(/publication date/i), testData.publicationDate);
-      await userEvent.type(screen.getByLabelText(/price/i), testData.price);
-      await userEvent.type(screen.getByLabelText(/purchase link/i), testData.purchaseLink);
-
-      // Verify input values
-      expect(screen.getByLabelText(/title/i)).toHaveValue(testData.title);
-      expect(screen.getByLabelText(/author/i)).toHaveValue(testData.author);
-      expect(screen.getByLabelText(/isbn/i)).toHaveValue(testData.isbn);
-      expect(screen.getByLabelText(/publication date/i)).toHaveValue(testData.publicationDate);
-      expect(screen.getByLabelText(/genre/i)).toHaveValue(testData.genre);
-      expect(screen.getByLabelText(/book type/i)).toHaveValue(testData.bookType);
-      expect(screen.getByLabelText(/price/i)).toHaveValue(Number(testData.price));
-      expect(screen.getByLabelText(/purchase link/i)).toHaveValue(testData.purchaseLink);
+      await user.type(screen.getByPlaceholderText(/Enter book title/i), validBook.title);
+      await user.type(screen.getByPlaceholderText(/Enter author name/i), validBook.author);
+      await user.type(screen.getByPlaceholderText(/Enter ISBN/i), validBook.isbn);
+      await user.type(screen.getByLabelText(/Publication Date/i), validBook.publicationDate);
+      await user.selectOptions(screen.getByLabelText(/Genre/i), validBook.genre);
+      await user.selectOptions(screen.getByLabelText(/Book Type/i), validBook.bookType);
+      await user.type(screen.getByPlaceholderText(/Enter price/i), validBook.price.toString());
+      await user.type(screen.getByPlaceholderText(/Enter purchase link/i), validBook.purchaseLink);
 
       // Submit form
-      const submitButton = screen.getByRole('button', { name: /add book/i });
-      fireEvent.click(submitButton);
+      await user.click(screen.getByRole('button', { name: /Add Book/i }));
 
       // Verify onAddBook was called with correct data
       expect(mockOnAddBook).toHaveBeenCalledTimes(1);
       expect(mockOnAddBook).toHaveBeenCalledWith(expect.objectContaining({
-        title: testData.title,
-        author: testData.author,
-        isbn: testData.isbn,
-        publicationDate: testData.publicationDate,
-        genre: testData.genre,
-        bookType: testData.bookType,
-        price: Number(testData.price),
-        purchaseLink: testData.purchaseLink
+        ...validBook,
+        id: expect.any(String)
       }));
+
+      // Verify form is reset after submission
+      expect(screen.getByPlaceholderText(/Enter book title/i)).toHaveValue('');
+      expect(screen.getByPlaceholderText(/Enter author name/i)).toHaveValue('');
     });
   });
 
