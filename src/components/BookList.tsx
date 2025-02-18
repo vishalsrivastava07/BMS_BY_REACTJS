@@ -1,37 +1,103 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { Book } from './types';
 import { BookListHeader } from './BookListHeader';
 import { BookSearchBar } from './BookSearchBar';
 import { BookListControls } from './BookListControls';
 import { BookTableRow } from './BookTableRow';
 import { BookDetailsModal } from './BookDetailsModal';
+import { useAppDispatch, useAppSelector } from '../components/redux/hooks';
+import {
+  setBooks,
+  deleteBook,
+  updateBook,
+  setSortField,
+  setSortDirection,
+  setSelectedBook,
+} from '../components/redux/booksSlice';
 
 export interface BookListProps {
   books: Book[];
-  onDelete: (id: string) => void;
-  onEdit: (book: Book) => void;
   onShowAddBook: () => void;
 }
 
+type SortField = 'title' | 'author' | 'isbn' | 'genre' | 'bookType' | 'price';
+
 export const BookList: React.FC<BookListProps> = ({ 
-  books, 
-  onDelete, 
-  onEdit, 
+  books: initialBooks, 
   onShowAddBook 
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
-  const [genreFilter, setGenreFilter] = useState<'all' | 'fiction' | 'non-fiction'>('all');
-  const [sortOrder, setSortOrder] = useState<'none' | 'asc' | 'desc'>('none');
+  const dispatch = useAppDispatch();
+  const {
+    items: books,
+    searchTerm,
+    genreFilter,
+    sortField,
+    sortDirection,
+    selectedBook,
+  } = useAppSelector((state: { books: any; }) => state.books);
 
-  const clearAllFilters = () => {
-    setSearchTerm('');
-    setGenreFilter('all');
-    setSortOrder('none');
+  useEffect(() => {
+    const storedBooks = localStorage.getItem('books');
+    if (storedBooks) {
+      dispatch(setBooks(JSON.parse(storedBooks)));
+    } else {
+      dispatch(setBooks(initialBooks));
+      localStorage.setItem('books', JSON.stringify(initialBooks));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (initialBooks.length > 0) {
+      const storedBooks = localStorage.getItem('books');
+      const currentBooks = storedBooks ? JSON.parse(storedBooks) : [];
+      
+      const mergedBooks = [...currentBooks];
+      initialBooks.forEach(newBook => {
+        if (!currentBooks.some((book: { id: string; }) => book.id === newBook.id)) {
+          mergedBooks.push(newBook);
+        }
+      });
+      
+      dispatch(setBooks(mergedBooks));
+      localStorage.setItem('books', JSON.stringify(mergedBooks));
+    }
+  }, [initialBooks]);
+
+  const handleDelete = (id: string) => {
+    dispatch(deleteBook(id));
+    const updatedBooks = books.filter((book: { id: string; }) => book.id !== id);
+    localStorage.setItem('books', JSON.stringify(updatedBooks));
+  };
+
+  const handleEdit = (editedBook: Book) => {
+    dispatch(updateBook(editedBook));
+    const updatedBooks = books.map((book: { id: string; }) => 
+      book.id === editedBook.id ? editedBook : book
+    );
+    localStorage.setItem('books', JSON.stringify(updatedBooks));
+  };
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      dispatch(setSortDirection(
+        sortDirection === 'none' ? 'asc' :
+        sortDirection === 'asc' ? 'desc' : 'none'
+      ));
+    } else {
+      dispatch(setSortField(field));
+      dispatch(setSortDirection('asc'));
+    }
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) return '↕';
+    if (sortDirection === 'asc') return '↑';
+    if (sortDirection === 'desc') return '↓';
+    return '↕';
   };
 
   const filteredBooks = books
-    .filter(book => {
+    .filter((book: { title: string; author: string; isbn: string; genre: any; }) => {
       const matchesSearch = 
         book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         book.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -41,13 +107,17 @@ export const BookList: React.FC<BookListProps> = ({
       
       return matchesSearch && matchesGenre;
     })
-    .sort((a, b) => {
-      if (sortOrder === 'asc') {
-        return a.title.localeCompare(b.title);
-      } else if (sortOrder === 'desc') {
-        return b.title.localeCompare(a.title);
-      }
-      return 0;
+    .sort((a: { [x: string]: any; }, b: { [x: string]: any; }) => {
+      if (sortDirection === 'none') return 0;
+      
+      const aValue = a[sortField];
+      const bValue = b[sortField];
+      
+      const compareResult = typeof aValue === 'string' 
+        ? aValue.localeCompare(bValue as string)
+        : (aValue as number) - (bValue as number);
+        
+      return sortDirection === 'asc' ? compareResult : -compareResult;
     });
 
   return (
@@ -55,20 +125,10 @@ export const BookList: React.FC<BookListProps> = ({
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row items-center mb-4 gap-4">
           <div className="w-full md:w-5/12">
-            <BookSearchBar
-              searchTerm={searchTerm}
-              genreFilter={genreFilter}
-              onSearchChange={setSearchTerm}
-              onGenreChange={setGenreFilter}
-            />
+            <BookSearchBar />
           </div>
           <div className="w-full md:w-7/12">
-            <BookListControls
-              sortOrder={sortOrder}
-              onSortChange={setSortOrder}
-              onShowAddBook={onShowAddBook}
-              onClearFilters={clearAllFilters}
-            />
+            <BookListControls onShowAddBook={onShowAddBook} />
           </div>
         </div>
 
@@ -86,23 +146,53 @@ export const BookList: React.FC<BookListProps> = ({
               <table className="w-full bg-white border rounded">
                 <thead>
                   <tr className="bg-gray-50">
-                    <th className="p-4 text-left">Title</th>
-                    <th className="p-4 text-left">Author</th>
-                    <th className="p-4 text-left">ISBN</th>
-                    <th className="p-4 text-left">Genre</th>
-                    <th className="p-4 text-left">Book Type</th>
-                    <th className="p-4 text-left">Price</th>
+                    <th 
+                      className="p-4 text-left cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('title')}
+                    >
+                      Title {getSortIcon('title')}
+                    </th>
+                    <th 
+                      className="p-4 text-left cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('author')}
+                    >
+                      Author {getSortIcon('author')}
+                    </th>
+                    <th 
+                      className="p-4 text-left cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('isbn')}
+                    >
+                      ISBN {getSortIcon('isbn')}
+                    </th>
+                    <th 
+                      className="p-4 text-left cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('genre')}
+                    >
+                      Genre {getSortIcon('genre')}
+                    </th>
+                    <th 
+                      className="p-4 text-left cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('bookType')}
+                    >
+                      Book Type {getSortIcon('bookType')}
+                    </th>
+                    <th 
+                      className="p-4 text-left cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('price')}
+                    >
+                      Price {getSortIcon('price')}
+                    </th>
                     <th className="p-4 text-left">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredBooks.map(book => (
+                  {filteredBooks.map((book: Book) => (
                     <BookTableRow
                       key={book.id}
                       book={book}
-                      onEdit={onEdit}
-                      onDelete={onDelete}
-                      onShowDetails={setSelectedBook}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                      onShowDetails={() => dispatch(setSelectedBook(book))}
                     />
                   ))}
                 </tbody>
@@ -115,11 +205,9 @@ export const BookList: React.FC<BookListProps> = ({
       {selectedBook && (
         <BookDetailsModal
           book={selectedBook}
-          onClose={() => setSelectedBook(null)}
+          onClose={() => dispatch(setSelectedBook(null))}
         />
       )}
     </div>
   );
 };
-
-export default BookList;

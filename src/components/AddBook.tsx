@@ -17,7 +17,8 @@ export const AddBook: React.FC<AddBookProps> = ({ onAddBook, editingBook }) => {
     genre: 'fiction' as const,
     price: 0,
     purchaseLink: '',
-    bookType: 'Ebook' as const
+    bookType: 'Ebook' as const,
+    description: ''
   };
 
   const [book, setBook] = useState<Book>(initialBookState);
@@ -31,55 +32,36 @@ export const AddBook: React.FC<AddBookProps> = ({ onAddBook, editingBook }) => {
     }
   }, [editingBook]);
 
-  const validateForm = (): boolean => {
+  const validateForm = () => {
     const newErrors: Partial<Record<keyof Book, string>> = {};
 
-    // Title validation
     if (!book.title.trim()) {
       newErrors.title = 'Title is required';
     }
 
-    // Author validation
     if (!book.author.trim()) {
       newErrors.author = 'Author is required';
     }
 
-    // ISBN validation
     if (!book.isbn.trim()) {
       newErrors.isbn = 'ISBN is required';
-    } else if (!/^\d+$/.test(book.isbn.trim())) {
+    } else if (!/^\d+$/.test(book.isbn)) {
       newErrors.isbn = 'ISBN must contain only numbers';
     }
 
-    // Publication date validation
     if (!book.publicationDate) {
       newErrors.publicationDate = 'Publication date is required';
     }
 
-    // Genre validation
-    if (!book.genre) {
-      newErrors.genre = 'Genre is required';
-    }
-
-    // Book type validation
-    if (!book.bookType) {
-      newErrors.bookType = 'Book type is required';
-    }
-
-    // Price validation
-    if (!book.price || book.price <= 0) {
+    const priceNum = Number(book.price);
+    if (!book.price || priceNum <= 0) {
       newErrors.price = 'Price must be greater than 0';
     }
 
-    // Purchase link validation
     if (!book.purchaseLink.trim()) {
       newErrors.purchaseLink = 'Purchase link is required';
-    } else {
-      try {
-        new URL(book.purchaseLink);
-      } catch (e) {
-        newErrors.purchaseLink = 'Please enter a valid URL';
-      }
+    } else if (!/^https?:\/\/\S+$/.test(book.purchaseLink)) {
+      newErrors.purchaseLink = 'Please enter a valid URL';
     }
 
     setErrors(newErrors);
@@ -88,21 +70,35 @@ export const AddBook: React.FC<AddBookProps> = ({ onAddBook, editingBook }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (validateForm()) {
       const submittingBook: Book = {
         ...book,
-        id: editingBook ? editingBook.id : uuidv4()
+        id: book.id || uuidv4(),
+        price: Number(book.price)
       };
       onAddBook(submittingBook);
-      setBook(initialBookState);
-      setErrors({});
+      handleClearForm();
     }
   };
 
   const handleIsbnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, ''); // Remove non-numeric characters
+    const value = e.target.value;
     setBook({ ...book, isbn: value });
+    if (errors.isbn) {
+      setErrors({ ...errors, isbn: '' });
+    }
+  };
+  const handlePurchaseLinkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setBook({ ...book, purchaseLink: value });
+    if (errors.purchaseLink) {
+      setErrors({ ...errors, purchaseLink: '' });
+    }
+  };
+
+  const handleClearForm = () => {
+    setBook(initialBookState);
+    setErrors({});
   };
 
   return (
@@ -114,10 +110,11 @@ export const AddBook: React.FC<AddBookProps> = ({ onAddBook, editingBook }) => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
               Title <span className="text-red-500">*</span>
             </label>
             <input
+              id="title"
               className={`w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
                 errors.title ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -130,10 +127,11 @@ export const AddBook: React.FC<AddBookProps> = ({ onAddBook, editingBook }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="author" className="block text-sm font-medium text-gray-700 mb-1">
               Author <span className="text-red-500">*</span>
             </label>
             <input
+              id="author"
               className={`w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
                 errors.author ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -146,10 +144,11 @@ export const AddBook: React.FC<AddBookProps> = ({ onAddBook, editingBook }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="isbn" className="block text-sm font-medium text-gray-700 mb-1">
               ISBN <span className="text-red-500">*</span>
             </label>
             <input
+              id="isbn"
               className={`w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
                 errors.isbn ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -162,10 +161,11 @@ export const AddBook: React.FC<AddBookProps> = ({ onAddBook, editingBook }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="publicationDate" className="block text-sm font-medium text-gray-700 mb-1">
               Publication Date <span className="text-red-500">*</span>
             </label>
             <input
+              id="publicationDate"
               className={`w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
                 errors.publicationDate ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -178,10 +178,11 @@ export const AddBook: React.FC<AddBookProps> = ({ onAddBook, editingBook }) => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="genre" className="block text-sm font-medium text-gray-700 mb-1">
                 Genre <span className="text-red-500">*</span>
               </label>
               <select
+                id="genre"
                 className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
                 value={book.genre}
                 onChange={(e) => setBook({ ...book, genre: e.target.value as 'fiction' | 'non-fiction' })}
@@ -189,54 +190,55 @@ export const AddBook: React.FC<AddBookProps> = ({ onAddBook, editingBook }) => {
                 <option value="fiction">Fiction</option>
                 <option value="non-fiction">Non-Fiction</option>
               </select>
-              {errors.genre && <p className="mt-1 text-sm text-red-600">{errors.genre}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="bookType" className="block text-sm font-medium text-gray-700 mb-1">
                 Book Type <span className="text-red-500">*</span>
               </label>
               <select
+                id="bookType"
                 className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
                 value={book.bookType}
-                onChange={(e) => setBook({ ...book, bookType: e.target.value as 'Ebook' | 'printedBook' })}
+                onChange={(e) => setBook({ ...book, bookType: e.target.value as 'Ebook' | 'Printedbook' })}
               >
                 <option value="Ebook">E-Book</option>
-                <option value="printedBook">Printed Book</option>
+                <option value="Printedbook">Printed Book</option>
               </select>
-              {errors.bookType && <p className="mt-1 text-sm text-red-600">{errors.bookType}</p>}
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
               Price <span className="text-red-500">*</span>
             </label>
             <input
+              id="price"
               className={`w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
                 errors.price ? 'border-red-500' : 'border-gray-300'
               }`}
               type="number"
               step="0.01"
-              min="0.01"
+              min="0"
               value={book.price}
-              onChange={(e) => setBook({ ...book, price: parseFloat(e.target.value) })}
+              onChange={(e) => setBook({ ...book, price: Number(e.target.value) })}
               placeholder="Enter price"
             />
             {errors.price && <p className="mt-1 text-sm text-red-600">{errors.price}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="purchaseLink" className="block text-sm font-medium text-gray-700 mb-1">
               Purchase Link <span className="text-red-500">*</span>
             </label>
             <input
+              id="purchaseLink"
               className={`w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
                 errors.purchaseLink ? 'border-red-500' : 'border-gray-300'
               }`}
               type="url"
               value={book.purchaseLink}
-              onChange={(e) => setBook({ ...book, purchaseLink: e.target.value })}
+              onChange={handlePurchaseLinkChange}
               placeholder="Enter purchase link"
             />
             {errors.purchaseLink && <p className="mt-1 text-sm text-red-600">{errors.purchaseLink}</p>}
@@ -252,10 +254,7 @@ export const AddBook: React.FC<AddBookProps> = ({ onAddBook, editingBook }) => {
             <button
               type="button"
               className="px-6 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-              onClick={() => {
-                setBook(initialBookState);
-                setErrors({});
-              }}
+              onClick={handleClearForm}
             >
               Clear Form
             </button>
