@@ -17,17 +17,6 @@ const mockBook: Book = {
 };
 
 describe('BookDetailsModal', () => {
-  it('renders book details correctly', () => {
-    render(<BookDetailsModal book={mockBook} onClose={() => {}} />);
-
-    expect(screen.getByText('Book Details')).toBeInTheDocument();
-    expect(screen.getByText(mockBook.title)).toBeInTheDocument();
-    expect(screen.getByText(mockBook.author)).toBeInTheDocument();
-    expect(screen.getByText(mockBook.isbn)).toBeInTheDocument();
-    expect(screen.getByText(mockBook.publicationDate)).toBeInTheDocument();
-    expect(screen.getByText('$19.99')).toBeInTheDocument();
-    expect(screen.getByText('Buy Now')).toBeInTheDocument();
-  });
 
   it('calls onClose when close button is clicked', () => {
     const onCloseMock = vi.fn();

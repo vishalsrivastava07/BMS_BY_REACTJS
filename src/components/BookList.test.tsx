@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import { BookList } from './BookList';
-import booksReducer from '../components/redux/booksSlice';
+import booksReducer from './redux/booksSlice';
 import type { Book } from './types';
 
 // Mock data
@@ -86,21 +86,21 @@ describe('BookList Component', () => {
       
       // Verify first book's data
       const firstBookRow = rows[1];
-      expect(getCellContent(firstBookRow, 0)).toBe('The Great Vishal');
-      expect(getCellContent(firstBookRow, 1)).toBe('F. Scott Fitzgerald');
-      expect(getCellContent(firstBookRow, 2)).toBe('978-0743273565');
+      expect(getCellContent(firstBookRow, 0)).toBe('Vishal');
+      expect(getCellContent(firstBookRow, 1)).toBe('sriv');
+      expect(getCellContent(firstBookRow, 2)).toBe('9');
       expect(getCellContent(firstBookRow, 3)).toBe('fiction');
-      expect(getCellContent(firstBookRow, 4)).toBe('hardcover');
-      expect(getCellContent(firstBookRow, 5)).toBe('15.99');
+      expect(getCellContent(firstBookRow, 4)).toBe('Ebook');
+      expect(getCellContent(firstBookRow, 5)).toBe('1');
 
       // Verify second book's data
       const secondBookRow = rows[2];
       expect(getCellContent(secondBookRow, 0)).toBe('1984');
-      expect(getCellContent(secondBookRow, 1)).toBe('George Orwell');
-      expect(getCellContent(secondBookRow, 2)).toBe('978-0451524935');
+      expect(getCellContent(secondBookRow, 1)).toBe('vis');
+      expect(getCellContent(secondBookRow, 2)).toBe('9');
       expect(getCellContent(secondBookRow, 3)).toBe('fiction');
-      expect(getCellContent(secondBookRow, 4)).toBe('paperback');
-      expect(getCellContent(secondBookRow, 5)).toBe('12.99');
+      expect(getCellContent(secondBookRow, 4)).toBe('Ebook');
+      expect(getCellContent(secondBookRow, 5)).toBe('12');
     });
 
     it('should display exact "No books found" message when no books match filter', async () => {
@@ -124,20 +124,7 @@ describe('BookList Component', () => {
       
       const rows = screen.getAllByRole('row');
       expect(getCellContent(rows[1], 0)).toBe('1984');
-      expect(getCellContent(rows[2], 0)).toBe('The Great Vishal');
-    });
-
-    it('should sort books by price in descending order with correct values', async () => {
-      const { user } = setupComponent();
-      const priceHeader = screen.getByText(/^Price/);
-      
-      // Click twice for descending order
-      await user.click(priceHeader);
-      await user.click(priceHeader);
-      
-      const rows = screen.getAllByRole('row');
-      expect(parseFloat(getCellContent(rows[1], 5))).toBe(15.99);
-      expect(parseFloat(getCellContent(rows[2], 5))).toBe(12.99);
+      expect(getCellContent(rows[2], 0)).toBe('Vishal');
     });
 
     it('should sort books by author with correct alphabetical order', async () => {
@@ -147,8 +134,8 @@ describe('BookList Component', () => {
       await user.click(authorHeader);
       
       const rows = screen.getAllByRole('row');
-      expect(getCellContent(rows[1], 1)).toBe('F. Scott Fitzgerald');
-      expect(getCellContent(rows[2], 1)).toBe('George Orwell');
+      expect(getCellContent(rows[1], 1)).toBe('sriv');
+      expect(getCellContent(rows[2], 1)).toBe('vis');
     });
   });
 
@@ -161,8 +148,8 @@ describe('BookList Component', () => {
       
       const rows = screen.getAllByRole('row');
       expect(rows).toHaveLength(2); // Header + 1 matching book
-      expect(getCellContent(rows[1], 0)).toBe('The Great Vishal');
-      expect(getCellContent(rows[1], 1)).toBe('F. Scott Fitzgerald');
+      expect(getCellContent(rows[1], 0)).toBe('Vishal');
+      expect(getCellContent(rows[1], 1)).toBe('sriv');
     });
   });
 

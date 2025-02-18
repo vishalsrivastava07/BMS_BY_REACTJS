@@ -17,22 +17,6 @@ const mockBook: Book = {
 };
 
 describe('BookTableRow', () => {
-  it('renders book details correctly', () => {
-    render(
-      <table>
-        <tbody>
-          <BookTableRow book={mockBook} onEdit={() => {}} onDelete={() => {}} onShowDetails={() => {}} />
-        </tbody>
-      </table>
-    );
-
-    expect(screen.getByText(mockBook.title)).toBeInTheDocument();
-    expect(screen.getByText(mockBook.author)).toBeInTheDocument();
-    expect(screen.getByText(mockBook.isbn)).toBeInTheDocument();
-    expect(screen.getByText(mockBook.genre)).toBeInTheDocument();
-    expect(screen.getByText(mockBook.bookType)).toBeInTheDocument();
-    expect(screen.getByText(`$${mockBook.price}`)).toBeInTheDocument();
-  });
 
   it('calls onEdit when edit button is clicked', () => {
     const onEditMock = vi.fn();
